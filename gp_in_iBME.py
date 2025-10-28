@@ -137,73 +137,77 @@ for i in range(files):
 
 print("Success")
 
-gt = np.loadtxt("/home/malab/iBME/GP8/GRID_opt_8")
-print(gt)
+results = []
+for i in range(files):
+    frames = pd.DataFrame(pd.read_csv(f"/home/malab/iBME/GP{i}/GRID_opt_{i}"))
+    results.append(frames)
+points = pd.concat(results)
+print(points)
+grid_file = points.to_csv("/home/malab/iBME/GRID_sum.txt", index=False)
+  
 ##Plotting
 
-for i in range(files):
-    # 1) load your grid file (change the filename if needed)
-    grid = np.loadtxt(f'/home/malab/iBME/GP{i}/GRID_opt_{i}')   
-    grid = np.atleast_2d(grid)
-    
-    # 2) extract axes
-    dro = np.unique(grid[:,1])
-    r0  = np.unique(grid[:,2])
-    
-    # 3) ensure rows are ordered (d_rho major, r0 minor) for reshape
-    order = np.lexsort((grid[:,1], grid[:,2]))  # sort by (dro, r0)
-    grid = grid[order]
-    
-    # 4) ensure gamma exists (last column = ln(chi2_after / phi_eff))
-    chi2 = np.clip(grid[:,4], 1e-12, None)
-    phi  = np.clip(grid[:,5], 1e-12, None)
-    if grid.shape[1] < 7:
-        gamma = np.log(chi2 / phi)
-        grid = np.concatenate([grid, gamma[:,None]], axis=1)
-    
-    # grid columns: [0]=idx [1]=d_rho [2]=r0 [3]=chi2_before [4]=chi2_after [5]=phi_eff [6]=gamma
-    chi2 = np.clip(grid[:,4], 1e-12, None)
-    phi  = np.clip(grid[:,5], 1e-12, None)
-    gam  = grid[:,6]  # already ln(chi2_after / phi_eff)
-    
-    # reshape to (len(r0), len(dro)) for imshow with r0 on Y, d_rho on X
-    chi2_mat = np.log(chi2).reshape(len(r0), len(dro))
-    phi_mat  = (phi).reshape(len(r0), len(dro))
-    gam_mat  = gam.reshape(len(r0), len(dro))
-    
-    # locate minimum gamma to highlight
-    min_y, min_x = np.unravel_index(np.nanargmin(gam_mat), gam_mat.shape)
-    best_dro = dro[min_x]
-    best_r0  = r0[min_y]
-    
-    fig, axs = plt.subplots(1, 3, figsize=(18, 5), dpi=150)
-    
-    im0 = axs[0].imshow(chi2_mat, origin='upper', aspect='auto',
-                        extent=[dro.min(), dro.max(), r0.min(), r0.max()])
-    axs[0].set_title(r'$\ln(\chi^2_{\mathrm{after}})$')
-    axs[0].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
-    plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
-    
-    im1 = axs[1].imshow(phi_mat, origin='upper', aspect='auto')
-    axs[1].set_title(r'$\phi_{\mathrm{eff}}$')
-    axs[1].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
-    plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
-    
-    im2 = axs[2].imshow(gam_mat, origin='upper', aspect='auto')
-    axs[2].set_title(r'$\gamma=\ln(\chi^2_{\mathrm{after}}/\phi_{\mathrm{eff}})$')
-    axs[2].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
-    plt.colorbar(im2, ax=axs[2], fraction=0.046, pad=0.04)
-    
-    # tick labels: show every 2nd tick for readability
-    xticks = np.arange(0, len(dro), 2)
-    yticks = np.arange(0, len(r0), 2)
-    for ax in axs:
-        ax.set_xticks(xticks); ax.set_xticklabels([f'{dro[i]:.2f}' for i in xticks], rotation=300)
-        ax.set_yticks(yticks); ax.set_yticklabels([f'{r0[i]:.3f}' for i in yticks])
-        ax.set_xlabel(r'$\delta\rho$  [$e/\mathrm{nm}^3$]')
-    axs[0].set_ylabel(r'$r_0/r_m$')
-    
-    fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.02)
-    plt.tight_layout()
-    # plt.savefig('grid_heatmaps.png', dpi=300)
-    plt.show()
+# 1) load your grid file (change the filename if needed)
+grid = np.loadtxt(grid_file)   
+
+# 2) extract axes
+dro = np.unique(grid[:,1])
+r0  = np.unique(grid[:,2])
+
+# 3) ensure rows are ordered (d_rho major, r0 minor) for reshape
+order = np.lexsort((grid[:,1], grid[:,2]))  # sort by (dro, r0)
+grid = grid[order]
+
+# 4) ensure gamma exists (last column = ln(chi2_after / phi_eff))
+chi2 = np.clip(grid[:,4], 1e-12, None)
+phi  = np.clip(grid[:,5], 1e-12, None)
+if grid.shape[1] < 7:
+    gamma = np.log(chi2 / phi)
+    grid = np.concatenate([grid, gamma[:,None]], axis=1)
+
+# grid columns: [0]=idx [1]=d_rho [2]=r0 [3]=chi2_before [4]=chi2_after [5]=phi_eff [6]=gamma
+chi2 = np.clip(grid[:,4], 1e-12, None)
+phi  = np.clip(grid[:,5], 1e-12, None)
+gam  = grid[:,6]  # already ln(chi2_after / phi_eff)
+
+# reshape to (len(r0), len(dro)) for imshow with r0 on Y, d_rho on X
+chi2_mat = np.log(chi2).reshape(len(r0), len(dro))
+phi_mat  = (phi).reshape(len(r0), len(dro))
+gam_mat  = gam.reshape(len(r0), len(dro))
+
+# locate minimum gamma to highlight
+min_y, min_x = np.unravel_index(np.nanargmin(gam_mat), gam_mat.shape)
+best_dro = dro[min_x]
+best_r0  = r0[min_y]
+
+fig, axs = plt.subplots(1, 3, figsize=(18, 5), dpi=150)
+
+im0 = axs[0].imshow(chi2_mat, origin='upper', aspect='auto',
+                    extent=[dro.min(), dro.max(), r0.min(), r0.max()])
+axs[0].set_title(r'$\ln(\chi^2_{\mathrm{after}})$')
+axs[0].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
+plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
+
+im1 = axs[1].imshow(phi_mat, origin='upper', aspect='auto')
+axs[1].set_title(r'$\phi_{\mathrm{eff}}$')
+axs[1].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
+plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
+
+im2 = axs[2].imshow(gam_mat, origin='upper', aspect='auto')
+axs[2].set_title(r'$\gamma=\ln(\chi^2_{\mathrm{after}}/\phi_{\mathrm{eff}})$')
+axs[2].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
+plt.colorbar(im2, ax=axs[2], fraction=0.046, pad=0.04)
+
+# tick labels: show every 2nd tick for readability
+xticks = np.arange(0, len(dro), 2)
+yticks = np.arange(0, len(r0), 2)
+for ax in axs:
+    ax.set_xticks(xticks); ax.set_xticklabels([f'{dro[i]:.2f}' for i in xticks], rotation=300)
+    ax.set_yticks(yticks); ax.set_yticklabels([f'{r0[i]:.3f}' for i in yticks])
+    ax.set_xlabel(r'$\delta\rho$  [$e/\mathrm{nm}^3$]')
+axs[0].set_ylabel(r'$r_0/r_m$')
+
+fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.02)
+plt.tight_layout()
+# plt.savefig('grid_heatmaps.png', dpi=300)
+plt.show()
