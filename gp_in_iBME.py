@@ -143,7 +143,8 @@ for i in range(files):
     results.append(frames)
 points = pd.concat(results)
 print(points)
-grid_file = points.to_csv("/home/malab/iBME/GRID_sum.txt", index=False)
+points.to_csv("/home/malab/iBME/GRID_sum.txt", index=False)
+grid_file = "/home/malab/iBME/GRID_sum.txt"
   
 ##Plotting
 
