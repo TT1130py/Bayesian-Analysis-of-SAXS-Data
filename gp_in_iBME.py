@@ -91,6 +91,7 @@ files = int(files)
 
 ##Grid to Dataframe for scan analysis
 GRID_DF = pd.DataFrame(pd.read_csv("{}/GRID_tau".format(path_gpdoc), delim_whitespace=True))
+
 ##iBME 
 
 
@@ -136,6 +137,8 @@ for i in range(files):
        print(f"iBMEf failed for GP{i}: {e}")
 
 print("Success")
+
+# Create summarized collected parameters file for plotting analysis
 
 results = []
 for i in range(files):
@@ -183,8 +186,7 @@ best_r0  = r0[min_y]
 
 fig, axs = plt.subplots(1, 3, figsize=(18, 5), dpi=150)
 
-im0 = axs[0].imshow(chi2_mat, origin='upper', aspect='auto',
-                    extent=[dro.min(), dro.max(), r0.min(), r0.max()])
+im0 = axs[0].imshow(chi2_mat, origin='upper', aspect='auto')
 axs[0].set_title(r'$\ln(\chi^2_{\mathrm{after}})$')
 axs[0].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
 plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
