@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import time
 from datetime import date
 
-##Set Parameters
+##Set paths and parameters
 
 #Working directory
 print("Current working directory: {0}".format(os.getcwd()))
@@ -33,11 +33,32 @@ calc_rows_path = "/home/malab/iBME/GP{}/calc_rows.txt" #path to calc_rows.txt (w
 #will use theta
 out_name = "/home/malab/iBME/GP{}/"
 
+##Create grid
+
+#assign dro and r0 values and steps
+#insert start value, end value + step, and step
+dro_grid = np.arange(-0.2, 0.2 + 0.1, 0.1) 
+r0_grid =  np.arange(1.5, 1.8 + 0.1, 0.1)
+
+grid_data = []
+index = 1
+for d in dro_grid:
+    dro_val = round(d, 2)
+    for r in r0_grid:
+        r0_val = round(r, 2)
+        grid_data.append([index, dro_val, r0_val])
+        index += 1
+
+grid_name = np.array(grid_data)
+np.savetxt(
+    "{}/grid_run.txt".format(path_gpdoc), grid_name, fmt=["%d", "%.2f", "%.2f"],
+    header="# d_rho r0", comments='')       
+
 ##Run do_gp
 
 #structure path, experiment path, theta, gl (optional), grid document
 run = subprocess.run(["./do_gp_v3.sh", path_structures, "{}/SASDLU4.dat".format(path_exp_file),
-                      theta, gl, "{}/GRID_tau".format(path_gpdoc)], 
+                      theta, gl, "{}/grid_run.txt".format(path_gpdoc)], 
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 print(f"STDOUT:\n {run.stdout}")
 print(f"STDERR:\n {run.stderr}")
@@ -91,12 +112,11 @@ with open(f"{path_exp_file}/SASDLU4_trun.dat", "r+") as f:
 files = int(files)
 
 ##Grid to Dataframe for scan analysis
-GRID_DF = pd.DataFrame(pd.read_csv("{}/GRID_tau".format(path_gpdoc), delim_whitespace=True))
+GRID_DF = pd.DataFrame(pd.read_csv("{}/grid_run.txt".format(path_gpdoc), delim_whitespace=True))
 
 ##iBME 
 
-
-for i in range(files):
+for i in range(len(GRID_DF)):
     try:
         #Run iBME
         #truncated exp file, calc_rows, theta, output format
@@ -142,7 +162,7 @@ print("Success")
 # Create summarized collected parameters file for plotting analysis
 
 results = []
-for i in range(files):
+for i in range(len(GRID_DF)):
     frames = pd.DataFrame(pd.read_csv(f"/home/malab/iBME/GP{i}/GRID_opt_{i}"))
     results.append(frames)
 points = pd.concat(results)
