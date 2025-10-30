@@ -10,7 +10,8 @@ import glob
 import numpy as np
 import re
 import matplotlib.pyplot as plt
-
+import time
+from datetime import date
 
 ##Set Parameters
 
@@ -214,3 +215,33 @@ fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.02)
 plt.tight_layout()
 # plt.savefig('grid_heatmaps.png', dpi=300)
 plt.show()
+
+## Save final summary of run
+
+#Time and date of run
+epoch = time.time()
+cd = time.strftime("%a, %d, %b, %Y, %H:%M:%S", time.localtime(epoch))
+today = date.today()
+
+
+#Amount of structures used
+struc_counter = range(0, 10000) #Arbitrary end- increase if more directories necessary
+struc = 0
+for i in struc_counter:
+    if os.path.isfile(f"{path_structures}/mm016_{i:03}.pdb"):
+        struc += 1
+    else:
+        break
+
+#Create file
+summary = []
+summary.append(f'Time of run: {cd}, Structure count: {struc}, Grid point count: {files}, Best dro: {best_dro}, Best r0: {best_r0}')
+dfsummary = pd.DataFrame(summary)
+
+#Modify name if required and save
+run_num = 0
+sumfile = "/home/malab/iBME/run_summary/run_{}__{}.txt"
+while os.path.isfile(sumfile.format(today, run_num)):
+    run_num += 1
+sumfile = sumfile.format(today, run_num)    
+dfsummary.to_csv(sumfile, index=False)
