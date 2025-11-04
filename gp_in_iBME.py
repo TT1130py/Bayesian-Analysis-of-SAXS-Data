@@ -37,11 +37,11 @@ out_name = "/home/malab/iBME/GP{}/"
 
 #assign dro and r0 values and steps
 #insert start value, end value + step, and step
-dro_grid = np.arange(-0.2, 0.2 + 0.1, 0.1) 
-r0_grid =  np.arange(1.5, 1.8 + 0.1, 0.1)
+dro_grid = np.arange(-0.8, 0.2 + 0.1, 0.1) 
+r0_grid =  np.arange(1.4, 2.4 + 0.1, 0.1)
 
 grid_data = []
-index = 1
+index = 0
 for d in dro_grid:
     dro_val = round(d, 2)
     for r in r0_grid:
@@ -233,8 +233,6 @@ axs[0].set_ylabel(r'$r_0/r_m$')
 
 fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.02)
 plt.tight_layout()
-# plt.savefig('grid_heatmaps.png', dpi=300)
-plt.show()
 
 ## Save final summary of run
 
@@ -253,9 +251,15 @@ for i in struc_counter:
     else:
         break
 
+#Other parameters (can add more)
+min_dro = min(grid[:,1])
+max_dro = max(grid[:,1])
+min_r0 = min(grid[:,2])
+max_r0 = max(grid[:,2])
+
 #Create file
 summary = []
-summary.append(f'Time of run: {cd}, Structure count: {struc}, Grid point count: {files}, Best dro: {best_dro}, Best r0: {best_r0}')
+summary.append(f'Time of run: {cd}, Structure count: {struc}, Grid point count: {files}, Best dro: {best_dro}, Best r0: {best_r0}, Min dro: {min_dro}, Max dro: {max_dro}, Min r0: {min_r0}, Max r0: {max_r0}')
 dfsummary = pd.DataFrame(summary)
 
 #Modify name if required and save
@@ -265,3 +269,15 @@ while os.path.isfile(sumfile.format(today, run_num)):
     run_num += 1
 sumfile = sumfile.format(today, run_num)    
 dfsummary.to_csv(sumfile, index=False)
+
+plt.savefig(f'/home/malab/iBME/run_summary/grid_heatmaps_{today}_{run_num}.png', dpi=300)
+plt.show()
+
+#Same for all grid points
+pointsdf = pd.DataFrame(points)
+gridrun_num = 0
+gridsumfile = "/home/malab/iBME/run_summary/gridrun_{}__{}.txt"
+while os.path.isfile(gridsumfile.format(today, gridrun_num)):
+    gridrun_num += 1 
+gridsumfile = gridsumfile.format(today, gridrun_num)
+pointsdf.to_csv(gridsumfile, index=False)
