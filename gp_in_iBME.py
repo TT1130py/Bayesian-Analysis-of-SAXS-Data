@@ -33,6 +33,8 @@ calc_rows_path = "/home/malab/iBME/GP{}/calc_rows.txt" #path to calc_rows.txt (w
 #will use theta
 out_name = "/home/malab/iBME/GP{}/"
 
+#Parameters for data save
+run_sum_path = "/home/malab/iBME/run_summary"
 ##Create grid
 
 #assign dro and r0 values and steps
@@ -236,11 +238,20 @@ plt.tight_layout()
 
 ## Save final summary of run
 
+
 #Time and date of run
 epoch = time.time()
 cd = time.strftime("%a, %d, %b, %Y, %H:%M:%S", time.localtime(epoch))
 today = date.today()
 
+#Create Directory in /run_summary for each run
+dir_num = 0
+run_directory = "run_info_{}_{}"
+info_path = os.path.join(run_sum_path, run_directory)
+while os.path.isdir(info_path.format(today, dir_num)):
+    dir_num += 1
+info_path = info_path.format(today, dir_num)
+os.mkdir(info_path)
 
 #Amount of structures used
 struc_counter = range(0, 10000) #Arbitrary end- increase if more directories necessary
@@ -264,20 +275,28 @@ dfsummary = pd.DataFrame(summary)
 
 #Modify name if required and save
 run_num = 0
-sumfile = "/home/malab/iBME/run_summary/run_{}__{}.txt"
+sumfile = os.path.join(info_path, "run_{}__{}.txt")
 while os.path.isfile(sumfile.format(today, run_num)):
     run_num += 1
 sumfile = sumfile.format(today, run_num)    
 dfsummary.to_csv(sumfile, index=False)
 
-plt.savefig(f'/home/malab/iBME/run_summary/grid_heatmaps_{today}_{run_num}.png', dpi=300)
+heatmap = f'{info_path}/grid_heatmaps_{today}_{dir_num}.png'
+fig.savefig(heatmap, dpi=300)
 plt.show()
 
 #Same for all grid points
 pointsdf = pd.DataFrame(points)
 gridrun_num = 0
-gridsumfile = "/home/malab/iBME/run_summary/gridrun_{}__{}.txt"
+gridsumfile = os.path.join(info_path, "gridrun_{}__{}.txt")
 while os.path.isfile(gridsumfile.format(today, gridrun_num)):
     gridrun_num += 1 
 gridsumfile = gridsumfile.format(today, gridrun_num)
 pointsdf.to_csv(gridsumfile, index=False)
+
+#Save pdb weights of most optimal grid point
+weight_idx = GRID_DF.index[(GRID_DF['d_rho']== best_dro) & (GRID_DF['r0']== best_r0)].tolist()
+weight_str = str(weight_idx[0])
+opt_weight = pd.DataFrame(pd.read_csv("{}/GP{}/_19.weights.dat".format(path_gpdoc, weight_str), delim_whitespace=True, header=None))
+opt_sorted = opt_weight.sort_values(by=1, ascending=False)
+opt_sorted.to_csv(f'{info_path}/structure_weights_sorted_{today}_{dir_num}.txt', index=None)
