@@ -39,7 +39,7 @@ run_sum_path = "/home/malab/iBME/run_summary"
 
 #assign dro and r0 values and steps
 #insert start value, end value + step, and step
-dro_grid = np.arange(-0.8, 0.2 + 0.1, 0.1) 
+dro_grid = np.arange(-20.0, 20.0 + 2.0, 2.0) 
 r0_grid =  np.arange(1.4, 2.4 + 0.1, 0.1)
 
 grid_data = []
@@ -212,7 +212,7 @@ fig, axs = plt.subplots(1, 3, figsize=(18, 5), dpi=150)
 im0 = axs[0].imshow(chi2_mat, origin='upper', aspect='auto')
 axs[0].set_title(r'$\ln(\chi^2_{\mathrm{after}})$')
 axs[0].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
-plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
+plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04,)
 
 im1 = axs[1].imshow(phi_mat, origin='upper', aspect='auto')
 axs[1].set_title(r'$\phi_{\mathrm{eff}}$')
@@ -233,7 +233,7 @@ for ax in axs:
     ax.set_xlabel(r'$\delta\rho$  [$e/\mathrm{nm}^3$]')
 axs[0].set_ylabel(r'$r_0/r_m$')
 
-fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.02)
+fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.0)
 plt.tight_layout()
 
 ## Save final summary of run
