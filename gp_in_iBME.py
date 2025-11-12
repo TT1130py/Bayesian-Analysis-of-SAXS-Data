@@ -12,6 +12,8 @@ import re
 import matplotlib.pyplot as plt
 import time
 from datetime import date
+from natsort import natsorted
+import shutil
 
 ##Set paths and parameters
 
@@ -55,6 +57,9 @@ grid_name = np.array(grid_data)
 np.savetxt(
     "{}/grid_run.txt".format(path_gpdoc), grid_name, fmt=["%d", "%.2f", "%.2f"],
     header="# d_rho r0", comments='')       
+
+#Create dataframe of file names for later use
+contents = pd.DataFrame(natsorted(os.listdir(path_structures)))
 
 ##Run do_gp
 
@@ -297,6 +302,11 @@ pointsdf.to_csv(gridsumfile, index=False)
 #Save pdb weights of most optimal grid point
 weight_idx = GRID_DF.index[(GRID_DF['d_rho']== best_dro) & (GRID_DF['r0']== best_r0)].tolist()
 weight_str = str(weight_idx[0])
+
+copy_dir = os.mkdir(f'{info_path}/GP{weight_str}')
+shutil.copytree(f'{path_gpdoc}/GP{weight_str}', copy_dir)
+
 opt_weight = pd.DataFrame(pd.read_csv("{}/GP{}/_19.weights.dat".format(path_gpdoc, weight_str), delim_whitespace=True, header=None))
+opt_weight['2'] = opt_weight.iloc[:, 0].map(contents.iloc[:, 0])
 opt_sorted = opt_weight.sort_values(by=1, ascending=False)
 opt_sorted.to_csv(f'{info_path}/structure_weights_sorted_{today}_{dir_num}.txt', index=None)
