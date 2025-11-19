@@ -7,8 +7,11 @@ theta=$3  # Currently unused, unless iBME is activated
 gl=$4 #Optional
 
 gpdoc=$5
+output_dir=$6
 
-grep -v "#" $2 | awk '{print $1}' > qvals.txt
+mkdir -p "$output_dir"
+
+grep -v "#" $2 | awk '{print $1}' > "$output_dir/qvals.txt"
 
 
 # Check if structure directory exists
@@ -47,33 +50,44 @@ for gl in "${grid_lines[@]}"; do
     dro=$(grep -v "#" $5 | sed -n "${gl}p" | awk '{print $2}')
     r0=$(grep -v "#" $5 | sed -n "${gl}p" | awk '{print $3}')
 
+    GP_DIR="$output_dir/GP$grid_point"
+
     echo "Running Pepsi-SAXS for grid point $grid_point (line $gl)..."
-    mkdir -p GP$grid_point
+    mkdir -p "$GP_DIR"
   
-    > GP$grid_point/calc_saxs.txt   # clear old data
+    > "$GP_DIR/calc_saxs.txt"   # clear old data
     # Loop over structure files
     for i in "${!structure_files[@]}"; do
 	echo "Processing structure $i: ${structure_files[$i]}"
         pdb_file="${structure_files[$i]}"
-        $pepsi_path "$pdb_file" "$exp_path" -o GP$grid_point/saxs$i.dat \
-            -cst --cstFactor 0 --I0 1.0 --dro $dro \
-            --r0_min_factor $r0 --r0_max_factor $r0 --r0_N 1
-       # Extract SAXS intensity column (q, I(q), etc.) — store only I(q)
-        intensities=$(awk '!/^#/ {printf "%s ", $4}' GP$grid_point/saxs$i.dat)
-	echo "$i $intensities" >> GP$grid_point/calc_saxs.txt
+
+	(
+		cd "$GP_DIR" || exit 1
+        
+		$pepsi_path "$pdb_file" "$exp_path" -o "saxs$i.dat" -cst --cstFactor 0 --I0 1.0 --dro $dro --r0_min_factor $r0 --r0_max_factor $r0 --r0_N 1 
+      		
+
+		# Extract SAXS intensity column (q, I(q), etc.) — store only I(q)
+      		intensities=$(awk '!/^#/ {printf "%s ", $4}' "saxs$i.dat")
+		echo "$i $intensities" >> "calc_saxs.txt"
             
             
 
-        rm GP$grid_point/saxs$i.dat
 
-        # Extract Rg only for grid_point == 0
-        if [ "$grid_point" -eq 0 ]; then
-            grep "Radius of gyration of the envelope" GP$grid_point/saxs$i.log | \
-                awk '{print $8}' >> GP$grid_point/Rg_env.dat
-        fi
+           	# Extract Rg only for grid_point == 0
+        	if [ "$grid_point" -eq 0 ]; then
+            		grep "Radius of gyration of the envelope" "saxs$i.log" | \
+                		awk '{print $8}' >> "Rg_env.dat"
+        	fi
 
-        rm GP$grid_point/saxs$i.log
-    done > GP$grid_point/logPEPSI
+        	rm -f "saxs$i.log"
+		rm -f "saxs$i.dat"
+
+	)
+	
+	echo "Completed run for $(basename "$pdb_file")"
+   
+    done > "$GP_DIR/logPEPSI"
 
     # Move any generated iBME files (if run separately)
     #mv gp${grid_point}_* GP$grid_point/ 2>/dev/null
