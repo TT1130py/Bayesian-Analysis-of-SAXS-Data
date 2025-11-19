@@ -15,6 +15,23 @@ from datetime import date
 from natsort import natsorted
 import shutil
 
+##Create main and sub directory
+
+#Time and date of run
+epoch = time.time()
+cd = time.strftime("%a, %d, %b, %Y, %H:%M:%S", time.localtime(epoch))
+today = date.today()
+
+main_path = '/home/malab/iBME'
+
+sub_dir_num = 0
+run_fol = "run_{}_{}"
+sub_path = os.path.join(main_path, run_fol)
+while os.path.isdir(sub_path.format(today, sub_dir_num)):
+    sub_dir_num += 1
+sub_path = sub_path.format(today, sub_dir_num)
+os.mkdir(sub_path)
+
 ##Set paths and parameters
 
 #Working directory
@@ -27,22 +44,19 @@ path_structures = "/home/malab/Desktop/PDB_ID/Structures/Structures_test"
 path_exp_file = "/home/malab/Desktop/BioEn-master/examples/scattering/files/experimental_data"
 theta = "50" #theta
 gl = "" #Optional- "" for loop
-path_gpdoc = "/home/malab/iBME" #path to grid 
 
 #Parameters for iBME
 #will use exp_file
-calc_rows_path = "/home/malab/iBME/GP{}/calc_rows.txt" #path to calc_rows.txt (will be GP(n))
+calc_rows_path = "{}/GP{}/calc_rows.txt" #path to calc_rows.txt (will be GP(n))
 #will use theta
-out_name = "/home/malab/iBME/GP{}/"
+out_name = "{}/GP{}/"
 
-#Parameters for data save
-run_sum_path = "/home/malab/iBME/run_summary"
 ##Create grid
 
 #assign dro and r0 values and steps
 #insert start value, end value + step, and step
-dro_grid = np.arange(-20.0, 20.0 + 2.0, 2.0) 
-r0_grid =  np.arange(1.4, 2.4 + 0.1, 0.1)
+dro_grid = np.arange(28, 30 + 2.0, 2.0) 
+r0_grid =  np.arange(1.4, 1.6 + 0.1, 0.1)
 
 grid_data = []
 index = 0
@@ -55,7 +69,7 @@ for d in dro_grid:
 
 grid_name = np.array(grid_data)
 np.savetxt(
-    "{}/grid_run.txt".format(path_gpdoc), grid_name, fmt=["%d", "%.2f", "%.2f"],
+    "{}/grid_run.txt".format(sub_path), grid_name, fmt=["%d", "%.2f", "%.2f"],
     header="# d_rho r0", comments='')       
 
 #Create dataframe of file names for later use
@@ -63,10 +77,13 @@ contents = pd.DataFrame(natsorted(os.listdir(path_structures)))
 
 ##Run do_gp
 
+env = os.environ.copy()
+env["OUTPUT_DIR"] = sub_path
+
 #structure path, experiment path, theta, gl (optional), grid document
 run = subprocess.run(["./do_gp_v3.sh", path_structures, "{}/SASDLU4.dat".format(path_exp_file),
-                      theta, gl, "{}/grid_run.txt".format(path_gpdoc)], 
-                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                      theta, gl, os.path.join(sub_path, "grid_run.txt"), sub_path], 
+                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
 print(f"STDOUT:\n {run.stdout}")
 print(f"STDERR:\n {run.stderr}")
 
@@ -77,21 +94,34 @@ if run.returncode != 1:
 
 ##File Modification
 
+#Move GP files to correct subfolder location
+GP = range(0, 10000)
+folder = 0
+for i in GP:
+    if os.path.isdir(f"{main_path}/GP{i}"):
+        try:
+            shutil.move("{}/GP{}".format(main_path, i), sub_path)
+        except shutil.Error as e:
+            print(f"Error: {e}")
+    else:
+        print("All folders moved to sub path")
+        break
+    
 #Counter file loop and make columns
 counter = range(0, 10000) #Arbitrary end- increase if more directories necessary
 files = 0
 for i in counter:
-    if os.path.isdir("/home/malab/iBME/GP{}".format(i)):
+    if os.path.isdir("{}/GP{}".format(sub_path, i)):
         files += 1
         # Read calc_saxs.txt with frame index + intensities
-        calc_rows = pd.read_csv("/home/malab/iBME/GP{}/calc_saxs.txt".format(i),
+        calc_rows = pd.read_csv("{}/GP{}/calc_saxs.txt".format(sub_path, i),
                              header=None, delim_whitespace=True)
      
         # Drop the first column (frame index)
         calc_rows = calc_rows.drop(columns=[0])
 
         # Write calc_rows.txt with header line # DATA=SAXS
-        calc_path = '/home/malab/iBME/GP{}/calc_rows.txt'.format(i)
+        calc_path = '{}/GP{}/calc_rows.txt'.format(sub_path, i)
         with open(calc_path, 'w') as f:
             f.write("# DATA=SAXS\n")
         calc_rows.to_csv(calc_path, mode='a', header=False, index=False, sep=' ')
@@ -119,7 +149,9 @@ with open(f"{path_exp_file}/SASDLU4_trun.dat", "r+") as f:
 files = int(files)
 
 ##Grid to Dataframe for scan analysis
-GRID_DF = pd.DataFrame(pd.read_csv("{}/grid_run.txt".format(path_gpdoc), delim_whitespace=True))
+GRID_DF = pd.DataFrame(pd.read_csv("{}/grid_run.txt".format(sub_path), delim_whitespace=True))
+
+#edit for solo grid run
 
 ##iBME 
 
@@ -127,16 +159,15 @@ for i in range(len(GRID_DF)):
     try:
         #Run iBME
         #truncated exp file, calc_rows, theta, output format
-        out_dir = out_name.format(i)
         run2 = iBME_script.iBMEf("{}/SASDLU4_trun.dat".format(path_exp_file), 
-                                 calc_rows_path.format(i),
-                                 theta, out_name.format(i))
+                                 calc_rows_path.format(sub_path, i),
+                                 theta, out_name.format(sub_path, i))
         
         #Collect Parameters 
         drho = GRID_DF.iloc[i]['d_rho']
         r0 = GRID_DF.iloc[i]['r0']
         
-        logs = glob.glob(os.path.join(out_name.format(i), "_ibme_*.log"))
+        logs = glob.glob(os.path.join(out_name.format(sub_path, i), "_ibme_*.log"))
 
         # Extract the number from the filename and sort numerically
         logs_sorted = sorted(logs, key=lambda x: int(re.search(r"_ibme_(\d+)\.log", x).group(1)))
@@ -157,7 +188,7 @@ for i in range(len(GRID_DF)):
 
         #Create file with collected parameters
         grid = np.array(rows, dtype=float)
-        np.savetxt("/home/malab/iBME/GP{}/GRID_opt_{}".format(i, i), grid,
+        np.savetxt("{}/GP{}/GRID_opt_{}".format(sub_path, i, i), grid,
            header="idx d_rho r0 CHI2_before CHI2_after PHI_eff", fmt="%.6g")
         
         print(f"iBMEf run completed for GP{i}")
@@ -170,12 +201,12 @@ print("Success")
 
 results = []
 for i in range(len(GRID_DF)):
-    frames = pd.DataFrame(pd.read_csv(f"/home/malab/iBME/GP{i}/GRID_opt_{i}"))
+    frames = pd.DataFrame(pd.read_csv(f"{sub_path}/GP{i}/GRID_opt_{i}"))
     results.append(frames)
 points = pd.concat(results)
 print(points)
-points.to_csv("/home/malab/iBME/GRID_sum.txt", index=False)
-grid_file = "/home/malab/iBME/GRID_sum.txt"
+points.to_csv("{}/GRID_sum.txt".format(sub_path), index=False)
+grid_file = "{}/GRID_sum.txt".format(sub_path)
   
 ##Plotting
 
@@ -243,13 +274,9 @@ plt.tight_layout()
 
 ## Save final summary of run
 
-
-#Time and date of run
-epoch = time.time()
-cd = time.strftime("%a, %d, %b, %Y, %H:%M:%S", time.localtime(epoch))
-today = date.today()
-
 #Create Directory in /run_summary for each run
+os.mkdir(f'{sub_path}/run_summary')
+run_sum_path = f'{sub_path}/run_summary'
 dir_num = 0
 run_directory = "run_info_{}_{}"
 info_path = os.path.join(run_sum_path, run_directory)
@@ -303,10 +330,10 @@ pointsdf.to_csv(gridsumfile, index=False)
 weight_idx = GRID_DF.index[(GRID_DF['d_rho']== best_dro) & (GRID_DF['r0']== best_r0)].tolist()
 weight_str = str(weight_idx[0])
 
-copy_dir = os.mkdir(f'{info_path}/GP{weight_str}')
-shutil.copytree(f'{path_gpdoc}/GP{weight_str}', copy_dir)
+copy_dir = f'{info_path}/GP{weight_str}'
+shutil.copytree(f'{sub_path}/GP{weight_str}', copy_dir, dirs_exist_ok=True)
 
-opt_weight = pd.DataFrame(pd.read_csv("{}/GP{}/_19.weights.dat".format(path_gpdoc, weight_str), delim_whitespace=True, header=None))
+opt_weight = pd.DataFrame(pd.read_csv("{}/GP{}/_19.weights.dat".format(sub_path, weight_str), delim_whitespace=True, header=None))
 opt_weight['2'] = opt_weight.iloc[:, 0].map(contents.iloc[:, 0])
 opt_sorted = opt_weight.sort_values(by=1, ascending=False)
 opt_sorted.to_csv(f'{info_path}/structure_weights_sorted_{today}_{dir_num}.txt', index=None)
