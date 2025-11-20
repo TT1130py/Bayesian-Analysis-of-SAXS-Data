@@ -15,8 +15,6 @@ from datetime import date
 from natsort import natsorted
 import shutil
 
-from numpy.conftest import env_setup
-
 ##Create main and sub directory
 
 #Time and date of run
