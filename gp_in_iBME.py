@@ -15,6 +15,8 @@ from datetime import date
 from natsort import natsorted
 import shutil
 
+from numpy.conftest import env_setup
+
 ##Create main and sub directory
 
 #Time and date of run
@@ -37,6 +39,8 @@ os.mkdir(sub_path)
 #Working directory
 print("Current working directory: {0}".format(os.getcwd()))
 os.chdir('/home/malab/iBME')
+print("Current working directory: {0}".format(os.getcwd()))
+os.chdir(sub_path)
 print("Current working directory: {0}".format(os.getcwd()))
 
 #Parameters for do_gp
@@ -77,11 +81,12 @@ contents = pd.DataFrame(natsorted(os.listdir(path_structures)))
 
 ##Run do_gp
 
+#move to new directory
 env = os.environ.copy()
 env["OUTPUT_DIR"] = sub_path
 
 #structure path, experiment path, theta, gl (optional), grid document
-run = subprocess.run(["./do_gp_v3.sh", path_structures, "{}/SASDLU4.dat".format(path_exp_file),
+run = subprocess.run(["../do_gp_v3.sh", path_structures, "{}/SASDLU4.dat".format(path_exp_file),
                       theta, gl, os.path.join(sub_path, "grid_run.txt"), sub_path], 
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
 print(f"STDOUT:\n {run.stdout}")
@@ -95,17 +100,17 @@ if run.returncode != 1:
 ##File Modification
 
 #Move GP files to correct subfolder location
-GP = range(0, 10000)
-folder = 0
-for i in GP:
-    if os.path.isdir(f"{main_path}/GP{i}"):
-        try:
-            shutil.move("{}/GP{}".format(main_path, i), sub_path)
-        except shutil.Error as e:
-            print(f"Error: {e}")
-    else:
-        print("All folders moved to sub path")
-        break
+#GP = range(0, 10000)
+#folder = 0
+#for i in GP:
+#    if os.path.isdir(f"{main_path}/GP{i}"):
+#        try:
+#            shutil.move("{}/GP{}".format(main_path, i), sub_path)
+#        except shutil.Error as e:
+#            print(f"Error: {e}")
+#    else:
+#        print("All folders moved to sub path")
+#        break
     
 #Counter file loop and make columns
 counter = range(0, 10000) #Arbitrary end- increase if more directories necessary
