@@ -204,7 +204,11 @@ print("Success")
 
 results = []
 for i in range(len(GRID_DF)):
-    frames = pd.DataFrame(pd.read_csv(f"{sub_path}/GP{i}/GRID_opt_{i}"))
+    folder_path = (f"{sub_path}/GP{i}/GRID_opt_{i}")
+    if not os.path.exists(folder_path):
+        print(f"Folder not found: {folder_path}")
+        continue
+    frames = pd.DataFrame(pd.read_csv(folder_path))
     results.append(frames)
 points = pd.concat(results)
 print(points)
