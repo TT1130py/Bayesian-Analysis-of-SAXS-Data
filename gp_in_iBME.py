@@ -159,6 +159,12 @@ GRID_DF = pd.DataFrame(pd.read_csv("{}/grid_run.txt".format(sub_path), delim_whi
 ##iBME 
 
 for i in range(len(GRID_DF)):
+    # Collect Parameters
+    drho = GRID_DF.iloc[i]['d_rho']
+    r0 = GRID_DF.iloc[i]['r0']
+
+    #set parameters to nan initally
+    chi2b = chi2a = phi = np.nan
     try:
         #Run iBME
         #truncated exp file, calc_rows, theta, output format
@@ -166,9 +172,7 @@ for i in range(len(GRID_DF)):
                                  calc_rows_path.format(sub_path, i),
                                  theta, out_name.format(sub_path, i))
         
-        #Collect Parameters 
-        drho = GRID_DF.iloc[i]['d_rho']
-        r0 = GRID_DF.iloc[i]['r0']
+
         
         logs = glob.glob(os.path.join(out_name.format(sub_path, i), "_ibme_*.log"))
 
@@ -178,25 +182,28 @@ for i in range(len(GRID_DF)):
         # Pick the last (largest iteration)
         log_file = logs_sorted[-1] if logs_sorted else None
 
-        chi2b = chi2a = phi = np.inf
+
         if log_file:
             with open(log_file) as lf:
                 for L in lf:
                     if "CHI2 before optimization:" in L:   chi2b = float(L.split()[-1])
                     elif "CHI2 after optimization:" in L:  chi2a = float(L.split()[-1])
                     elif "Fraction of effective frames:" in L: phi = float(L.split()[-1])
-        idx = (i)
-        rows = []
-        rows.append([idx, drho, r0, chi2b, chi2a, phi])
-
-        #Create file with collected parameters
-        grid = np.array(rows, dtype=float)
-        np.savetxt("{}/GP{}/GRID_opt_{}".format(sub_path, i, i), grid,
-           header="idx d_rho r0 CHI2_before CHI2_after PHI_eff", fmt="%.6g")
-        
         print(f"iBMEf run completed for GP{i}")
     except Exception as e:
-       print(f"iBMEf failed for GP{i}: {e}")
+        print(f"iBMEf failed for GP{i}: {e}")
+
+    #paste collected parameters- nan will stay for failed iBME runs
+    idx = (i)
+    rows = []
+    rows.append([idx, drho, r0, chi2b, chi2a, phi])
+
+    #Create file with collected parameters
+    grid = np.array(rows, dtype=float)
+    np.savetxt("{}/GP{}/GRID_opt_{}".format(sub_path, i, i), grid,
+       header="idx d_rho r0 CHI2_before CHI2_after PHI_eff", fmt="%.6g")
+        
+
 
 print("Success")
 
@@ -208,9 +215,9 @@ for i in range(len(GRID_DF)):
     if not os.path.exists(folder_path):
         print(f"Folder not found: {folder_path}")
         continue
-    frames = pd.DataFrame(pd.read_csv(folder_path))
+    frames = pd.read_csv(folder_path)
     results.append(frames)
-points = pd.concat(results)
+points = pd.concat(results, ignore_index=True)
 print(points)
 points.to_csv("{}/GRID_sum.txt".format(sub_path), index=False)
 grid_file = "{}/GRID_sum.txt".format(sub_path)
