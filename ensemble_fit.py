@@ -32,8 +32,8 @@ def simulated_curves(sim_file):
     df_s = pd.DataFrame(all_sim_s, index=filenames)
     df_iq = pd.DataFrame(all_sim_iq, index=filenames)
 
-    fixed_weights = all_weights.drop(all_weights.index[0])
-    df_weights = pd.concat([fixed_weights, pd.DataFrame(filenames)], axis=1)
+    fixed_weights = all_weights.drop(all_weights.index[0]).reset_index(drop=True)
+    df_weights = pd.DataFrame({"weights": fixed_weights.values, "structure file": filenames})
 
     length = s_sim.iloc[-1]
 
@@ -94,7 +94,7 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
 #for i in range(curves-1):
 
 
-len, sangle, intense, file_name, weights, wlist = simulated_curves(sim_path)
+lent, sangle, intense, file_name, weights, wlist = simulated_curves(sim_path)
 #angletrun, intensetrun, errtrun, anglefull, intensefull, errfull = experimental_curve(path_exp_file, len)
 #plot_compare(sangle, intense, angletrun, intensetrun, errtrun, anglefull, intensefull, errfull, file_name)
 
@@ -103,14 +103,26 @@ iq_tran = intense.transpose()
 merge = pd.concat([s_values, iq_tran], axis=1)
 
 merge.columns.values[0] = "s"
-for i in range(2):
+weighted_merge = merge.copy()
+
+for i in range(len(merge.columns)):
     if "mm" in merge.columns[i]:
         structure = merge.columns[i]
     else:
         continue
 
-    condition = weights[1].str.contains(f"{structure}", na=False)
-    w = weights.loc[condition, 0]
+    match = weights.loc[weights["structure file"] == structure, "weights"]
+    if match.empty:
+        w = 0
+    else:
+        w = match.iloc[0]
+        if pd.isna(w):
+            w = 0
+
+    for x in range(len(merge)):
+        iq_i = merge.loc[x, structure]
+        weighted_merge.loc[x,structure] = iq_i * w
+
 
 
 print("Breakpt")
