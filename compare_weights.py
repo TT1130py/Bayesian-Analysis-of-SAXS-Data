@@ -4,7 +4,7 @@ weights_path_1 = "/home/malab/Downloads/structure_weights_sorted_2025-11-22_0.cs
 path_1_type = "SAXS"
 weights_path_2 = "/home/malab/Downloads/Sorted_Results_NMR_Full.csv"
 path_2_type = "NMR"
-save_path = "" #optional save path
+save_path = "/home/malab/Desktop/compare_weights_output" #optional save path
 
 ## Functions -------------
 def match_weights(w1,w2):
@@ -53,4 +53,4 @@ final = rank_weights(df)
 print("Breakpt")
 
 ##Optional save file as csv
-#final.to_csv("{}/compared_weights.csv".format(save_path))
+final.to_csv("{}/compared_weights.csv".format(save_path))

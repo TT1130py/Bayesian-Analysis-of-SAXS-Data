@@ -2,6 +2,7 @@
 
 import subprocess
 import os
+import pandas
 
 #fix range to include all files specified
 def range1(start, end):
