@@ -1,21 +1,22 @@
 import pandas as pd
 
-weights_path_1 = "/home/malab/Downloads/structure_weights_sorted_2025-11-22_0.csv"
+weights_path_1 = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_40_1.35_10 (Copy).csv"
 path_1_type = "SAXS"
 weights_path_2 = "/home/malab/Downloads/Sorted_Results_NMR_Full.csv"
 path_2_type = "NMR"
-save_path = "/home/malab/Desktop/compare_weights_output" #optional save path
+save_path = "/home/malab/Desktop/compare_weights_info" #optional save path
 
 ## Functions -------------
 def match_weights(w1,w2):
-    w1_df = pd.read_csv(weights_path_1, header=None)
+    w1_df = pd.read_csv(weights_path_1, sep='\\t', header=0)
     w2_df = pd.read_csv(weights_path_2, header=None)
 
+    w1_df["PDB_Name"] =w1_df["PDB_Name"].str.replace('.pdb', '')
     #Combining weights for each file
     combined_weights = []
     for i in range(len(w1_df)):
-        pdb_file = w1_df.loc[i,0]
-        w1_weight = w1_df.loc[i,1]
+        pdb_file = w1_df.loc[i,"PDB_Name"]
+        w1_weight = w1_df.loc[i,"1"]
 
         mask = w2_df[0] == pdb_file
         w2_rows = w2_df.loc[mask, 1]
@@ -53,4 +54,4 @@ final = rank_weights(df)
 print("Breakpt")
 
 ##Optional save file as csv
-final.to_csv("{}/compared_weights.csv".format(save_path))
+final.to_csv("{}/compared_weights.xlsx".format(save_path))
