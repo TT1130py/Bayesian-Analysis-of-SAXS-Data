@@ -1,21 +1,53 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from natsort import natsort_keygen
+import argparse
+import os
 
 ##########------ PLOT SAXS CURVE COMPARISON OF EXPERIMENT VS WEIGHTED AVERAGE SIMULATION
+
+##########------ ARGUMENTS AND ABSOLUTE PATHS
+#parser = argparse.ArgumentParser(description='Fit Calculated SAXS Ensemble to experiment')
+#parser.add_argument("dro", type=float)
+#parser.add_argument("r0", type=float)
+#arser.add_argument("save_path", type=str)
+#args = parser.parse_args()
 
 #path to the experimental SAXS data
 path_exp_file = "/home/malab/Desktop/BioEn-master/examples/scattering/files/experimental_data"
 #path to the "structure weights sorted" file that contains structure file name and its weight (output from iBME)
-sim_path = "/home/malab/iBME/run_2025-11-20_0/run_summary/run_info_2025-11-20_0/structure_weights_sorted_2025-11-20_0.txt"
+#sim_path = "{}/iBME_results/structure_weights_sorted_*.txt".format(args.save_path)
 #path to the simulated SAXS curves of above files
 structure_path = "/home/malab/iBME/pepsi_output"
 
 ##########------ FUNCTIONS
+def match_files(sim_file):
+    sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb','',regex=False)
+
+    grid_df = pd.read_csv("/home/malab/Downloads/grid_full.txt", sep='\s+', header=None, names=['index', 'dro', 'r0'])
+    gp = grid_df.loc[(grid_df['dro'] == 40) & (grid_df['r0'] == 1.35), 'index'].iloc[0]
+    #grid_df = pd.read_csv(os.path.join(args.save_path, "grid_full.txt"), sep='\s+', header=None, names=['index', 'dro', 'r0'])
+    #gp = grid_df.loc[(grid_df['dro'] == args.dro) & (grid_df['r0'] == args.r0), 'index'].iloc[0]
+
+    #compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(args.save_path, str(gp)))
+    compiled_saxs = np.genfromtxt("/home/malab/Downloads/GP0_all_saxs.txt")
+    compiled_df = pd.DataFrame(compiled_saxs).reset_index(drop=True)
+    iq_sim_matrix = pd.DataFrame(compiled_df.drop(columns=[0]).values)
+    pdb_sorted = sim_pd.sort_values(by="PDB_Name", key=natsort_keygen()).reset_index(drop=True)
+
+
+    merge = pd.concat([iq_sim_matrix, pdb_sorted["PDB_Name"]], axis=1)
+    name = merge.iloc[:,-1]
+    s_values = pd.read_csv("/home/malab/Downloads/qvals.txt", header=None)
+
+    print("Breakpt")
+    return merge
 
 def simulated_curves(sim_file):
-    sim_pd = pd.read_csv(sim_file, header=None)
-    sim_pd[2] = sim_pd[2].str.replace('.pdb','',regex=False)
+    sim_pd = pd.read_csv(sim_file, header=0)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb','',regex=False)
 
     all_weights = sim_pd[1]
     curves = len(sim_pd)
@@ -130,6 +162,9 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
 ##########------ MAIN
 
 def main():
+    #Match Files
+    concat_merge = match_files("/home/malab/Downloads/structure_weights_sorted_2026-04-09.txt")
+
     #Find all simulated SAXS curves and place in dataframe
     lent, sangle, intense, file_name, weights_df, wlist = simulated_curves(sim_path)
 

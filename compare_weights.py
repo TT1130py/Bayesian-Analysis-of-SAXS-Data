@@ -1,6 +1,6 @@
 import pandas as pd
 
-weights_path_1 = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_40_1.35_10 (Copy).csv"
+weights_path_1 = "/home/malab/Downloads/structure_weights_sorted_2026-04-08.csv"
 path_1_type = "SAXS"
 weights_path_2 = "/home/malab/Downloads/Sorted_Results_NMR_Full.csv"
 path_2_type = "NMR"
