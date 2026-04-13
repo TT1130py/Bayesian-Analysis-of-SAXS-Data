@@ -1,11 +1,10 @@
-from os import WCONTINUED
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from natsort import natsort_keygen
 import argparse
 import os
+import glob
 
 system = "VACC" #Either VACC or Local
 ##########------ PLOT SAXS CURVE COMPARISON OF EXPERIMENT VS WEIGHTED AVERAGE SIMULATION
@@ -13,11 +12,17 @@ system = "VACC" #Either VACC or Local
 ##########------ ARGUMENTS AND ABSOLUTE PATHS
 if system == "VACC":
     print("VACC")
-    #parser = argparse.ArgumentParser(description='Fit Calculated SAXS Ensemble to experiment')
-    #parser.add_argument("dro", type=float)
-    #parser.add_argument("r0", type=float)
-    #arser.add_argument("save_path", type=str)
-    #args = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Fit Calculated SAXS Ensemble to experiment')
+    parser.add_argument("dro", type=float)
+    parser.add_argument("r0", type=float)
+    parser.add_argument("save_path", type=str)
+    
+    args = parser.parse_args()
+
+    sim_path = "{}/iBME_results/structure_weights_sorted_*.txt".format(args.save_path)
+
+    matching_files = glob.glob(sim_path)
+    real_file = matching_files[0]
 elif system == "Local":
     print("LOCAL")
     #sim_path = "{}/iBME_results/structure_weights_sorted_*.txt".format(args.save_path)
@@ -25,24 +30,21 @@ else:
     print("System not supported")
 
 #path to the experimental SAXS data
-path_exp_file = "/home/malab/Desktop/BioEn-master/examples/scattering/files/experimental_data"
+path_exp_file = "/gpfs1/home/t/j/tjaglal/experimental_data"
 #path to the "structure weights sorted" file that contains structure file name and its weight (output from iBME)
 
 #path to the simulated SAXS curves of above files
-structure_path = "/home/malab/iBME/pepsi_output"
+structure_path = "/gpfs1/home/t/j/tjaglal/structures"
 
 ##########------ FUNCTIONS
 def match_files(sim_file):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
     sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb','',regex=False)
 
-    grid_df = pd.read_csv("/home/malab/Downloads/curve_test/grid_full.txt", sep='\s+', header=None, names=['index', 'dro', 'r0'])
-    gp = grid_df.loc[(grid_df['dro'] == 30) & (grid_df['r0'] == 1.22), 'index'].iloc[0]
-    #grid_df = pd.read_csv(os.path.join(args.save_path, "grid_full.txt"), sep='\s+', header=None, names=['index', 'dro', 'r0'])
-    #gp = grid_df.loc[(grid_df['dro'] == args.dro) & (grid_df['r0'] == args.r0), 'index'].iloc[0]
+    grid_df = pd.read_csv(os.path.join(args.save_path, "grid_full.txt"), sep='\s+', header=None, names=['index', 'dro', 'r0'])
+    gp = grid_df.loc[(grid_df['dro'] == args.dro) & (grid_df['r0'] == args.r0), 'index'].iloc[0]
 
-    #compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(args.save_path, str(gp)))
-    compiled_saxs = np.genfromtxt("/home/malab/Downloads/curve_test/GP28_all_saxs.txt")
+    compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(args.save_path, str(gp)))
     compiled_df = pd.DataFrame(compiled_saxs).reset_index(drop=True)
     iq_sim_matrix = pd.DataFrame(compiled_df.drop(columns=[0]).values)
     pdb_sorted = sim_pd.sort_values(by="PDB_Name", key=natsort_keygen()).reset_index(drop=True)
@@ -50,7 +52,7 @@ def match_files(sim_file):
     pd.set_option('display.float_format', '{:.4e}'.format)
 
     sorted_weights = pdb_sorted.iloc[:,1]
-    s_full = np.genfromtxt("/home/malab/Downloads/curve_test/qvals.txt", skip_header=0)
+    s_full = np.genfromtxt("{}/mm016_100/qvals.txt".format(args.save_path), skip_header=0)
     s_values = s_full[:iq_sim_matrix.shape[1]]
     print("Breakpt")
     return s_values, iq_sim_matrix, sorted_weights, pdb_sorted["PDB_Name"]
@@ -155,7 +157,8 @@ def experimental_curve(path_exp_file, sim_length):
     plt.ylabel("i(q)")
     plt.xlabel("s")
     plt.title("Experimental SAXS curve with x log")
-    plt.show()
+    save_path_1 = "{}/iBME_results/experiment.png".format(args.save_path)
+    plt.savefig(save_path_1, dpi=300)
 
     return s_trun, iq_trun, err_trun, s, iq, err
     print("Breakpt")
@@ -174,7 +177,9 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
     ax.set_xlabel("s")
     ax.set_title("Simulated SAXS fit with Experiment - truncated")
     ax.legend()
-    plt.show()
+    
+    save_path_2 = "{}/iBME_results/truncated_fit.png".format(args.save_path)
+    fig.savefig(save_path_2, dpi=300)
 
     fig_2, ax_2 = plt.subplots(figsize = (10,10))
     ax_2.errorbar(s_full, iq_full, yerr = err_full, fmt= 'o', markersize=3, ecolor="lightgray", label="Experiment")
@@ -185,16 +190,18 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
     ax_2.set_xlabel("s")
     ax_2.set_title("Simulated SAXS fit with Experiment - full")
     ax.legend()
-    plt.show()
+    
+    save_path_3 = "{}/iBME_results/full_fit.png".format(args.save_path)
+    fig_2.savefig(save_path_3, dpi=300)
 
 ##########------ MAIN
 
 def main(run):
     if run == "VACC":
         #Match Files
-        s, concat_merge, weights, f_name = match_files("/home/malab/Downloads/curve_test/structure_weights_sorted_38.0_1.34_50.0.csv")
+        s, concat_merge, weights, f_name = match_files(real_file)
 
-        lent, s_weighted, iq_weighted = VACC_average_curve("/home/malab/Downloads/curve_test/structure_weights_sorted_38.0_1.34_50.0.csv", f_name, s, concat_merge)
+        lent, s_weighted, iq_weighted = VACC_average_curve(real_file, f_name, s, concat_merge)
 
         # Create the SAXS curves from experimental data for plotting
         angletrun, intensetrun, errtrun, anglefull, intensefull, errfull = experimental_curve(path_exp_file, lent)
@@ -202,6 +209,7 @@ def main(run):
         # Plot experiment vs weighted average simulation
         plot_compare(s_weighted, iq_weighted, angletrun, intensetrun, errtrun, anglefull, intensefull, errfull, "GP0_all_saxs")
 
+        #save
     elif run == "Local":
         #Find all simulated SAXS curves and place in dataframe
         lent, sangle, intense, file_name, weights_df, wlist = simulated_curves(sim_path)
