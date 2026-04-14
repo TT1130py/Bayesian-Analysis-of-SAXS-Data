@@ -1,14 +1,14 @@
 import pandas as pd
 
-weights_path_1 = "/home/malab/Downloads/structure_weights_sorted_2026-04-08.csv"
+weights_path_1 = "/home/malab/Downloads/structure_weights_sorted_38.0_1.34_100.0.csv"
 path_1_type = "SAXS"
-weights_path_2 = "/home/malab/Downloads/Sorted_Results_NMR_Full.csv"
+weights_path_2 = "/home/malab/Desktop/compare_weights_info/Sorted_Results_NMR_Full.csv"
 path_2_type = "NMR"
 save_path = "/home/malab/Desktop/compare_weights_info" #optional save path
 
 ## Functions -------------
 def match_weights(w1,w2):
-    w1_df = pd.read_csv(weights_path_1, sep='\\t', header=0)
+    w1_df = pd.read_csv(weights_path_1, sep=',', header=0)
     w2_df = pd.read_csv(weights_path_2, header=None)
 
     w1_df["PDB_Name"] =w1_df["PDB_Name"].str.replace('.pdb', '')
@@ -54,4 +54,4 @@ final = rank_weights(df)
 print("Breakpt")
 
 ##Optional save file as csv
-final.to_csv("{}/compared_weights.xlsx".format(save_path))
+final.to_csv("{}/compared_weights.csv".format(save_path))
