@@ -16,6 +16,7 @@ parser = argparse.ArgumentParser(description="Run iBME reweighting on fractions"
 parser.add_argument("theta", type=float)
 parser.add_argument("save_path", type=str)
 exp_path = "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
+trun_path = "/users/t/j/tjaglal/experimental_data/SASDLU4_truncated.dat"
 struc_path = "/users/t/j/tjaglal/structures"
 args = parser.parse_args()
 
@@ -57,7 +58,7 @@ os.makedirs(ibme_out_dir, exist_ok=True)
 
 sample_saxs = os.path.join(compiled_dir, "GP0_all_saxs.txt")
 sample_df = pd.read_csv(sample_saxs, sep='\s+', header=None)
-sim_length = len(sample_df.columns)
+sim_length = len(sample_df.columns) - 1
 
 exp_pd = pd.read_csv(exp_path, header=None, sep='\s+')
 exp_trun = exp_pd.iloc[:sim_length]
