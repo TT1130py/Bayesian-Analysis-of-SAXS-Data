@@ -1,14 +1,15 @@
 import pandas as pd
 
-weights_path_1 = "/home/malab/Downloads/structure_weights_sorted_38.0_1.34_100.0.csv"
+weights_path_1 = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_2026-04-24.txt"
 path_1_type = "SAXS"
 weights_path_2 = "/home/malab/Desktop/compare_weights_info/Sorted_Results_NMR_Full.csv"
 path_2_type = "NMR"
 save_path = "/home/malab/Desktop/compare_weights_info" #optional save path
+cutoff = 0.01 #cutoff value for inclusion into final compare spreadsheet
 
 ## Functions -------------
 def match_weights(w1,w2):
-    w1_df = pd.read_csv(weights_path_1, sep=',', header=0)
+    w1_df = pd.read_csv(weights_path_1, sep='\t', header=0)
     w2_df = pd.read_csv(weights_path_2, header=None)
 
     w1_df["PDB_Name"] =w1_df["PDB_Name"].str.replace('.pdb', '')
@@ -46,6 +47,8 @@ def rank_weights(weight_table):
     ranked_df = cw_df.sort_values(by='Average weight', ascending=False)
     name_ranked_df = ranked_df.rename(columns={0: "PDB File", 1: path_1_type, 2: path_2_type})
 
+    #remove rows based off cutoff value (comment out if want full list)
+    name_ranked_df = name_ranked_df[name_ranked_df['Average weight'] >= cutoff]
     return name_ranked_df
 
 ## Main ----------------
@@ -54,4 +57,4 @@ final = rank_weights(df)
 print("Breakpt")
 
 ##Optional save file as csv
-final.to_csv("{}/compared_weights.csv".format(save_path))
+final.to_csv("{}/compared_weights_t1000.csv".format(save_path))
