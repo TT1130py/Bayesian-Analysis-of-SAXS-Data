@@ -152,6 +152,7 @@ if __name__ == "__main__":
     
         # reshape for minimum values
         chi2_mat = np.log(chi2).reshape(len(r0_vals), len(dro_vals))
+        phi_mat = phi.reshape(len(r0_vals), len(dro_vals))
         skl_mat = skl.reshape(len(r0_vals), len(dro_vals))
         gam_mat = gamma.reshape(len(r0_vals), len(dro_vals))
     
@@ -159,12 +160,71 @@ if __name__ == "__main__":
         min_y, min_x = np.unravel_index(np.nanargmin(gam_mat), gam_mat.shape)
         best_dro = dro_vals[min_x]
         best_r0 = r0_vals[min_y]
-    
-    
+
         all_chi2.append(chi2_mat[min_y, min_x])
         all_skl.append(skl_mat[min_y, min_x])
-    
-    #####-------- Plotting
+
+        fig, axs = plt.subplots(1, 3, figsize=(18, 5), dpi=150)
+
+        #####----- Plot heatmap for specific theta
+        im0 = axs[0].imshow(chi2_mat, origin='upper', aspect='auto')
+        axs[0].set_title(r'$\ln(\chi^2_{\mathrm{after}})$')
+        axs[0].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
+        plt.colorbar(im0, ax=axs[0], fraction=0.046, pad=0.04)
+
+        im1 = axs[1].imshow(phi_mat, origin='upper', aspect='auto')
+        axs[1].set_title(r'$\phi_{\mathrm{eff}}$')
+        axs[1].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
+        plt.colorbar(im1, ax=axs[1], fraction=0.046, pad=0.04)
+
+        im2 = axs[2].imshow(gam_mat, origin='upper', aspect='auto')
+        axs[2].set_title(r'$\gamma=\ln(\chi^2_{\mathrm{after}}/\phi_{\mathrm{eff}})$')
+        axs[2].scatter(min_x, min_y, s=60, marker='o', facecolors='none', edgecolors='k')
+        plt.colorbar(im2, ax=axs[2], fraction=0.046, pad=0.04)
+
+        xticks = np.arange(0, len(dro_vals), 2)
+        yticks = np.arange(0, len(r0_vals), 2)
+        for ax in axs:
+            ax.set_xticks(xticks);
+            ax.set_xticklabels([f'{dro_vals[i]:.2f}' for i in xticks], rotation=300)
+            ax.set_yticks(yticks);
+            ax.set_yticklabels([f'{r0_vals[i]:.3f}' for i in yticks])
+            ax.set_xlabel(r'$\delta\rho$  [$e/\mathrm{nm}^3$]')
+        axs[0].set_ylabel(r'$r_0/r_m$')
+
+        fig.suptitle(f'Best: δρ={best_dro:.2f}, r0={best_r0:.3f}', y=1.0)
+        plt.tight_layout()
+
+        heatmap_path = os.path.join(ibme_out_dir, f'grid_heatmaps_{today}.png')
+        fig.savefig(heatmap_path, dpi=300)
+        print(f"Heatmap saved to {heatmap_path}")
+
+        #####----- Save posterior structure weights
+        weight_idx = GRID_DF.index[(GRID_DF['dro'] == best_dro) & (GRID_DF['r0'] == best_r0)].tolist()[0]
+        best_gp_dir = os.path.join(ibme_out_dir, f"GP{weight_idx}")
+
+        # Dynamically find the last .weights.dat file
+        weight_files = glob.glob(os.path.join(best_gp_dir, "*.weights.dat"))
+        if not weight_files:
+            raise FileNotFoundError(f"No .weights.dat files found in {best_gp_dir}")
+
+        weight_files_sorted = sorted(weight_files, key=lambda x: int(
+            re.search(r"_(\d+)\.weights\.dat", os.path.basename(x)).group(1)))
+        best_weight_file = weight_files_sorted[-1]
+
+        # Get a sorted list of ALL structure names to map the weights back to the PDBs
+        all_structures = glob.glob(os.path.join(struc_path, "*.pdb"))
+        contents = pd.DataFrame(natsorted([os.path.basename(x) for x in all_structures]))
+
+        # Map and save
+        opt_weight = pd.read_csv(best_weight_file, sep=r'\s+', header=None)
+        opt_weight['PDB_Name'] = opt_weight.iloc[:, 0].map(contents.iloc[:, 0])
+        opt_sorted = opt_weight.sort_values(by=1, ascending=False)
+
+        weights_out = os.path.join(ibme_out_dir, f'structure_weights_sorted_{today}.txt')
+        opt_sorted.to_csv(weights_out, index=None, sep='\t')
+
+    #####----- Plotting L curve for all theta
     chi_np = np.array(all_chi2)
     skl_np = np.array(all_skl)
     
