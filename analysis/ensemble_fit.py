@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from natsort import natsort_keygen
+from natsort import natsort_keygen, natsorted
 import argparse
 import os
 import glob
@@ -39,23 +39,39 @@ structure_path = "/gpfs1/home/t/j/tjaglal/structures"
 ##########------ FUNCTIONS
 def match_files(sim_file):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
-    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb','',regex=False)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
 
-    grid_df = pd.read_csv(os.path.join(args.save_path, "grid_full.txt"), sep='\s+', header=None, names=['index', 'dro', 'r0'])
+    grid_df = pd.read_csv(os.path.join(args.save_path, "grid_full.txt"), sep='\s+', header=None,
+                          names=['index', 'dro', 'r0'])
     gp = grid_df.loc[(grid_df['dro'] == args.dro) & (grid_df['r0'] == args.r0), 'index'].iloc[0]
 
     compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(args.save_path, str(gp)))
     compiled_df = pd.DataFrame(compiled_saxs).reset_index(drop=True)
     iq_sim_matrix = pd.DataFrame(compiled_df.drop(columns=[0]).values)
-    pdb_sorted = sim_pd.sort_values(by="PDB_Name", key=natsort_keygen()).reset_index(drop=True)
 
-    pd.set_option('display.float_format', '{:.4e}'.format)
+    true_pdb_order = []
 
-    sorted_weights = pdb_sorted.iloc[:,1]
+    search_pattern = os.path.join(args.save_path, "mm*", f"GP{gp}", "calc_saxs.txt")
+    sorted_files = natsorted(glob.glob(search_pattern))
+
+    for file in sorted_files:
+        parts = file.split(os.sep)
+        frac_folder = [p for p in parts if p.startswith('mm')][0]
+
+        struct_frac_path = os.path.join(structure_path, frac_folder)
+        pdbs = glob.glob(os.path.join(struct_frac_path, "mm*.pdb"))
+
+        pdbs.sort()
+
+        for pdb in pdbs:
+            true_pdb_order.append(os.path.basename(pdb).replace('.pdb', ''))
+
+    pdb_names = pd.Series(true_pdb_order)
+
     s_full = np.genfromtxt("{}/mm016_100/qvals.txt".format(args.save_path), skip_header=0)
     s_values = s_full[:iq_sim_matrix.shape[1]]
-    print("Breakpt")
-    return s_values, iq_sim_matrix, sorted_weights, pdb_sorted["PDB_Name"]
+
+    return s_values, iq_sim_matrix, None, pdb_names
 
 def VACC_average_curve(sim_file, pdb_names, s_val, iq_val):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
@@ -157,7 +173,7 @@ def experimental_curve(path_exp_file, sim_length):
     plt.ylabel("i(q)")
     plt.xlabel("s")
     plt.title("Experimental SAXS curve with x log")
-    save_path_1 = "{}/iBME_results/experiment.png".format(args.save_path)
+    save_path_1 = "{}/experiment.png".format(args.save_path)
     plt.savefig(save_path_1, dpi=300)
 
     return s_trun, iq_trun, err_trun, s, iq, err
@@ -178,7 +194,7 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
     ax.set_title("Simulated SAXS fit with Experiment - truncated")
     ax.legend()
     
-    save_path_2 = "{}/iBME_results/truncated_fit.png".format(args.save_path)
+    save_path_2 = "{}/truncated_fit.png".format(args.save_path)
     fig.savefig(save_path_2, dpi=300)
 
     fig_2, ax_2 = plt.subplots(figsize = (10,10))
@@ -191,7 +207,7 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
     ax_2.set_title("Simulated SAXS fit with Experiment - full")
     ax.legend()
     
-    save_path_3 = "{}/iBME_results/full_fit.png".format(args.save_path)
+    save_path_3 = "{}/full_fit.png".format(args.save_path)
     fig_2.savefig(save_path_3, dpi=300)
 
 ##########------ MAIN
