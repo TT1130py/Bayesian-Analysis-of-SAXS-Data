@@ -81,13 +81,15 @@ def VACC_average_curve(sim_file, pdb_names, s_val, iq_val):
     ordered_weights = np.array([weight_map.get(name, 0.0) for name in pdb_names])
     iq_array = np.array(iq_val)
 
+    prior_iq = np.mean(iq_array, axis=1)
+
     weighted_matrix = iq_array * ordered_weights[:, np.newaxis]
     avg_iq = np.sum(weighted_matrix, axis=0)
 
-    sim_merge = pd.concat([pd.DataFrame(s_val), pd.DataFrame(avg_iq)], axis=1)
+    sim_merge = pd.concat([pd.DataFrame(s_val), pd.DataFrame(avg_iq), pd.DataFrame(prior_iq)], axis=1)
     print("Breakpt")
 
-    return len(sim_merge), sim_merge.iloc[:,0], sim_merge.iloc[:,1]
+    return len(sim_merge), sim_merge.iloc[:,0], sim_merge.iloc[:,1], sim_merge.iloc[:,1]
 def simulated_curves(sim_file):
     sim_pd = pd.read_csv(sim_file, header=0)
     sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb','',regex=False)
@@ -179,16 +181,19 @@ def experimental_curve(path_exp_file, sim_length):
     return s_trun, iq_trun, err_trun, s, iq, err
     print("Breakpt")
 
-def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
+def plot_compare(s_sim, iq_sim, iq_prior, s, iq, err, s_full, iq_full, err_full, f_name):
     scale = np.sum(iq * iq_sim) / np.sum(iq_sim**2)
-
     scaled_iq_sim = iq_sim * scale
+
+    scale_p = np.sum(iq * iq_prior) / np.sum(iq_prior**2)
+    scaled_iq_prior = iq_prior * scale_p
 
     fig, ax = plt.subplots(figsize = (10,10))
     ax.errorbar(s, iq, yerr = err, fmt= 'o', markersize=3, ecolor="lightgray", label="Experiment")
     ax.set_yscale("log")
 
-    ax.plot(s_sim, scaled_iq_sim, zorder=3, lw=3, label=f_name)
+    ax.plot(s_sim, scaled_iq_sim, zorder=2, lw=3, label="Posterior", color="orange")
+    ax.plot(s_sim, scaled_iq_prior, zorder=3, lw=3, label="Prior", color="green")
     ax.set_ylabel("i(q)")
     ax.set_xlabel("s")
     ax.set_title("Simulated SAXS fit with Experiment - truncated")
@@ -201,7 +206,8 @@ def plot_compare(s_sim, iq_sim, s, iq, err, s_full, iq_full, err_full, f_name):
     ax_2.errorbar(s_full, iq_full, yerr = err_full, fmt= 'o', markersize=3, ecolor="lightgray", label="Experiment")
     ax_2.set_yscale("log")
 
-    ax_2.plot(s_sim, scaled_iq_sim, zorder=3, lw=3, label=f_name)
+    ax_2.plot(s_sim, scaled_iq_sim, zorder=2, lw=3, label="Posterior", color="orange")
+    ax_2.plot(s_sim, scaled_iq_prior, zorder=3, lw=3, label="Prior", color="green")
     ax_2.set_ylabel("i(q)")
     ax_2.set_xlabel("s")
     ax_2.set_title("Simulated SAXS fit with Experiment - full")
@@ -217,13 +223,13 @@ def main(run):
         #Match Files
         s, concat_merge, weights, f_name = match_files(real_file)
 
-        lent, s_weighted, iq_weighted = VACC_average_curve(real_file, f_name, s, concat_merge)
+        lent, s_weighted, iq_weighted, iq_prior = VACC_average_curve(real_file, f_name, s, concat_merge)
 
         # Create the SAXS curves from experimental data for plotting
         angletrun, intensetrun, errtrun, anglefull, intensefull, errfull = experimental_curve(path_exp_file, lent)
 
         # Plot experiment vs weighted average simulation
-        plot_compare(s_weighted, iq_weighted, angletrun, intensetrun, errtrun, anglefull, intensefull, errfull, "GP0_all_saxs")
+        plot_compare(s_weighted, iq_weighted, iq_prior, angletrun, intensetrun, errtrun, anglefull, intensefull, errfull, "GP0_all_saxs")
 
         #save
     elif run == "Local":
