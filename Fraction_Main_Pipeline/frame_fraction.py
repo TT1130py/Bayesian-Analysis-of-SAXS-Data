@@ -40,12 +40,13 @@ def create_grid(dro_min, dro_max, dro_step, r0_min, r0_max, r0_step):
     r0_grid = np.arange(r0_min, r0_max + r0_step, r0_step)
 
     grid_data = []
-
+    rm = 1.61
     index = 0
     for d in dro_grid:
         dro_val = round(d, 2)
         for r in r0_grid:
-            r0_val = round(r, 2)
+            r0_ratio = r / rm
+            r0_val = round(r0_ratio, 4)
             grid_data.append([index, dro_val, r0_val])
             index += 1
 
