@@ -5,7 +5,7 @@ import os
 
 ######--------- PATHS
 
-reweighted_path = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_2026-04-24.txt"
+reweighted_path = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_2026-05-05.txt"
 save_path = "/home/malab/Desktop/compare_weights_info" #optional
 
 #####--------- FUNCTIONS
@@ -44,8 +44,9 @@ def plot_cumulative(pos, pri, idx):
     plt.tight_layout()
     plt.show()
 
-    fig.savefig(os.path.join(save_path, "cumul_weights.png"))
+    return fig
 
 #####---------- MAIN
 pos_w, pri_w, index = cumulative_weights_all(reweighted_path)
-plot_cumulative(pos_w, pri_w, index)
+fig = plot_cumulative(pos_w, pri_w, index)
+fig.savefig(os.path.join(save_path, "cumul_weights_t4000.png"))

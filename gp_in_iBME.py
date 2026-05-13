@@ -4,7 +4,7 @@
 
 import subprocess
 import os
-import iBME_script
+from gp_files import iBME_script
 import pandas as pd
 import glob 
 import numpy as np
@@ -168,7 +168,7 @@ for i in range(len(GRID_DF)):
     try:
         #Run iBME
         #truncated exp file, calc_rows, theta, output format
-        run2 = iBME_script.iBMEf("{}/SASDLU4_trun.dat".format(path_exp_file), 
+        run2 = iBME_script.iBMEf("{}/SASDLU4_trun.dat".format(path_exp_file),
                                  calc_rows_path.format(sub_path, i),
                                  theta, out_name.format(sub_path, i))
         

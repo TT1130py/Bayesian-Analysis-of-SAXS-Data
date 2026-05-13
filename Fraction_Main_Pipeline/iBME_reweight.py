@@ -1,15 +1,13 @@
 import os
 import glob
-import subprocess
 import argparse
 import pandas as pd
 import numpy as np
 import re
-import shutil
 import matplotlib.pyplot as plt
 from datetime import date
 from natsort import natsorted
-import iBME_script
+from gp_files import iBME_script
 
 #########--------- ARGUMENTS
 parser = argparse.ArgumentParser(description="Run iBME reweighting on fractions")

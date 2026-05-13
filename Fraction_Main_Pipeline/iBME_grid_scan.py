@@ -1,16 +1,9 @@
 ############---------- REQUIREMENTS
 import subprocess
 import os
-import iBME_script
 import pandas as pd
 import glob
-import numpy as np
-import re
-import matplotlib.pyplot as plt
-import time
-from datetime import date
 from natsort import natsorted
-import shutil
 import argparse
 
 #Parse arguments
