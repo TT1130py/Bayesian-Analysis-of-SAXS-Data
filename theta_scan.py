@@ -224,6 +224,15 @@ if __name__ == "__main__":
         weights_out = os.path.join(ibme_out_dir, f'structure_weights_sorted_{today}.txt')
         opt_sorted.to_csv(weights_out, index=None, sep='\t')
 
+        #####----- Summary File
+        b_drho = best_dro
+        b_r0 = best_r0
+        t = theta
+        snum = 5567
+        bgp = GRID_DF.loc[(GRID_DF['dro'] == b_drho) & (GRID_DF['r0'] == b_r0), 'index'].iloc[0]
+        summarydf = pd.DataFrame({"Best drho value": b_drho, "Best r0 value": b_r0, "Theta": t, "Frame number": snum, "Best grid point": bgp})
+
+
     #####----- Plotting L curve for all theta
     chi_np = np.array(all_chi2)
     skl_np = np.array(all_skl)

@@ -22,12 +22,14 @@ import glob
 #####----- PATHS AND ARGUMENTS
 parser = argparse.ArgumentParser(description="SAXS curve analysis for different theta scans")
 parser.add_argument("main_path", type=str, help="path to main directory containing specific theta scans")
+parser.add_argument("saxs_path", type=str, help="path to SAXS simulations")
 
 args = parser.parse_args()
 
 ##EDIT
 theta_vals = np.array([])
 theta_path = os.path.join(args.main_path, "saxs_dro_30_to_50_r0_1.22_to_1.42_theta{}")
+best_gp = 10
 ##
 
 path_exp_file = "/gpfs1/home/t/j/tjaglal/experimental_data"
@@ -63,20 +65,20 @@ def match_files(real_theta):
     matching_files = glob.glob(sim_path)
     real_file = matching_files[0]
 
-    sim_pd = pd.read_csv(real_file, sep='\\t', header=0)
-    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
+    #sim_pd = pd.read_csv(real_file, sep='\\t', header=0)
+    #sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
 
-    grid_path = os.path.join(real_theta, "best_grid.txt")
-    with open(grid_path, 'r') as f:
-        gp = f.read().strip()
+    #grid_path = os.path.join(real_theta, "best_grid.txt")
+    #with open(grid_path, 'r') as f:
+        #gp = f.read().strip()
 
-    compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(real_theta, str(gp)))
+    compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(args.saxs_path, str(best_gp)))
     compiled_df = pd.DataFrame(compiled_saxs).reset_index(drop=True)
     iq_sim_matrix = pd.DataFrame(compiled_df.drop(columns=[0]).values)
 
     true_pdb_order = []
 
-    search_pattern = os.path.join(real_theta, "mm*", f"GP{gp}", "calc_saxs.txt")
+    search_pattern = os.path.join(args.saxs_path, "mm*", f"GP{best_gp}", "calc_saxs.txt")
     sorted_files = natsorted(glob.glob(search_pattern))
 
     for file in sorted_files:
@@ -93,7 +95,7 @@ def match_files(real_theta):
 
     pdb_names = pd.Series(true_pdb_order)
 
-    s_full = np.genfromtxt("{}/mm016_100/qvals.txt".format(real_theta), skip_header=0)
+    s_full = np.genfromtxt("{}/mm016_100/qvals.txt".format(args.saxs_path), skip_header=0)
     s_values = s_full[:iq_sim_matrix.shape[1]]
 
     return s_values, iq_sim_matrix, None, pdb_names, real_file
@@ -131,7 +133,7 @@ def plot_compare(s_weighted_dict, iq_weighted_dict, iq_prior, s, iq, err, s_full
     ax.set_title("Simulated SAXS fit with Experiment - truncated")
     ax.legend()
 
-    save_path_2 = "{}/truncated_fit.png".format(args.main_path)
+    save_path_2 = "{}/theta_scan_curves.png".format(args.main_path)
     fig.savefig(save_path_2, dpi=300)
 
 def main():
