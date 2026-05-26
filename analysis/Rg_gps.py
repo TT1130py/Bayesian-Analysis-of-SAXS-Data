@@ -4,13 +4,15 @@
 import numpy as np
 import pandas as pd
 import os
-import argparse
 import glob
 from natsort import natsorted
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 #####----- PATHS, ARGUMENTS, REQUIREMENTS
 experimental_data = "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
 experimental_rg = 6.7 * 10 #convert to angstrom
+output_path = ''
 
 ## Edit here and/or add another subset for every weight file used
 post_weights_1 = ""
@@ -22,8 +24,14 @@ best_r0_1 = ""
 ## Amount of weights used
 wam = ""
 
-#####----- FUNCTIONS
+## Add new varibales to list
+best_dro = [best_dro_1]
+best_r0 = [best_r0_1]
+post_weights = [post_weights_1]
+grid_paths = [grid_sum_1]
+save_paths = [save_path_1]
 
+#####----- FUNCTIONS
 def concat_rg(best_dro, best_r0, grid_path, save_path):
     grid_df = pd.read_csv(grid_path, sep=',')
     gp = grid_df.index[(grid_df['d_rho'] == best_dro) & (grid_df['r0'] == best_r0)].tolist()[0]
@@ -67,3 +75,65 @@ def concat_rg(best_dro, best_r0, grid_path, save_path):
     rg_df = rg_df.drop(columns=['is_end'])
 
     return rg_df
+
+def init_plot(rg_df_list, post_weights):
+
+    #Posterior plot
+    post_fig, post_ax = plt.subplots(figsize = (10,10))
+    sns.set_style("ticks")
+
+    for i in range(wam):
+        a = 0.9
+        post_weights_ind = pd.read_csv(post_weights[i], sep='\s+')
+        post_weights_ind.columns = ['index', 'weight', 'PDB_Name']
+
+        post_weights_ind[['system', 'frame']] = post_weights_ind['PDB_Name'].str.extract(r'(mm\d+)_(\d+)\.pdb')
+        post_weights_ind['frame'] = post_weights_ind['frame'].astype(int)
+
+        # merge to align correctly
+        merged = pd.merge(rg_df_list[i], post_weights_ind, on=['system', 'frame'], how='inner')
+
+        rg_sim_post = merged['Rg'].to_numpy()
+        post_weights_arr = merged['weight'].to_numpy()
+
+        sns.kdeplot(x=rg_sim_post, weights=post_weights_arr, color='red', alpha=a, label=fr'$\delta \rho$: {best_dro[i]} | $r_0$: {best_r0[i]}', ax=post_ax)
+        a -= 0.1
+    post_ax.axvline(x=experimental_rg, color='green', linestyle='--', label='Experimental Rg')
+
+    post_ax.set_xlabel('Rg distribution in Angstrom')
+    post_ax.set_ylabel('Density')
+    post_ax.set_title('Reweighted Rg distribution shift')
+    post_ax.legend()
+
+    #Prior plot
+    pri_fig, pri_ax = plt.subplots(figsize = (10,10))
+    sns.set_style("ticks")
+
+    for i in range(wam):
+        a_2 = 0.9
+        rg_sim_prior = rg_df_list[i]['Rg'].to_numpy()
+        prior_weights = np.ones(len(rg_sim_prior)) / len(rg_sim_prior)
+        sns.kdeplot(x=rg_sim_prior, weights=prior_weights, color='blue', label=fr'$\delta \rho$: {best_dro[i]} | $r_0$: {best_r0[i]}', ax=pri_ax)
+        a_2 -= 0.1
+    pri_ax.axvline(x=experimental_rg, color='green', linestyle='--', label='Experimental Rg')
+
+    pri_ax.set_xlabel('Rg distribution in Angstrom')
+    pri_ax.set_ylabel('Density')
+    pri_ax.set_title('Unweighted Rg distribution shift')
+    pri_ax.legend()
+
+    return post_fig, pri_fig
+
+def main():
+    rg_df_list = []
+    for i in range(wam):
+        rg_df = concat_rg(best_dro[i], best_r0[i], grid_paths[i], save_paths[i])
+        rg_df_list.append(rg_df)
+
+    posterior_plot, prior_plot = init_plot(rg_df_list, post_weights)
+    posterior_plot.savefig(f"{output_path}/posterior_rg_distribution.png", dpi=300, bbox_inches='tight')
+    prior_plot.savefig(f"{output_path}/prior_rg_distribution.png", dpi=300, bbox_inches='tight')
+
+if __name__ == '__main__':
+    main()
+
