@@ -21,10 +21,24 @@ save_path_1 = ""
 best_dro_1 = ""
 best_r0_1 = ""
 
-## Amount of weights used
-wam = ""
+## Edit here and/or add another subset for every weight file used
+post_weights_2 = ""
+grid_sum_2 = "" #this is grid sum
+save_path_2 = ""
+best_dro_2 = "" #int
+best_r0_2 = "" #int
 
-## Add new varibales to list
+## Edit here and/or add another subset for every weight file used
+post_weights_3 = ""
+grid_sum_3 = "" #this is grid sum
+save_path_3 = ""
+best_dro_3 = "" #int
+best_r0_3 = "" #int
+
+## Amount of weights used
+wam = "" #int
+
+## Add new variables to list
 best_dro = [best_dro_1]
 best_r0 = [best_r0_1]
 post_weights = [post_weights_1]
@@ -81,7 +95,9 @@ def init_plot(rg_df_list, post_weights):
     #Posterior plot
     post_fig, post_ax = plt.subplots(figsize = (10,10))
     sns.set_style("ticks")
-
+    colors_post = sns.color_palette("flare", n_colors=wam)
+    colors_pri = sns.color_palette("crest", n_colors=wam)
+    
     for i in range(wam):
         a = 0.9
         post_weights_ind = pd.read_csv(post_weights[i], sep='\s+')
@@ -96,7 +112,7 @@ def init_plot(rg_df_list, post_weights):
         rg_sim_post = merged['Rg'].to_numpy()
         post_weights_arr = merged['weight'].to_numpy()
 
-        sns.kdeplot(x=rg_sim_post, weights=post_weights_arr, color='red', alpha=a, label=fr'$\delta \rho$: {best_dro[i]} | $r_0$: {best_r0[i]}', ax=post_ax)
+        sns.kdeplot(x=rg_sim_post, weights=post_weights_arr, color=colors_post[i], label=fr'$\delta \rho$: {best_dro[i]} | $r_0$: {best_r0[i]}', ax=post_ax)
         a -= 0.1
     post_ax.axvline(x=experimental_rg, color='green', linestyle='--', label='Experimental Rg')
 
@@ -113,7 +129,7 @@ def init_plot(rg_df_list, post_weights):
         a_2 = 0.9
         rg_sim_prior = rg_df_list[i]['Rg'].to_numpy()
         prior_weights = np.ones(len(rg_sim_prior)) / len(rg_sim_prior)
-        sns.kdeplot(x=rg_sim_prior, weights=prior_weights, color='blue', label=fr'$\delta \rho$: {best_dro[i]} | $r_0$: {best_r0[i]}', ax=pri_ax)
+        sns.kdeplot(x=rg_sim_prior, weights=prior_weights, color=colors_pri[i], label=fr'$\delta \rho$: {best_dro[i]} | $r_0$: {best_r0[i]}', ax=pri_ax)
         a_2 -= 0.1
     pri_ax.axvline(x=experimental_rg, color='green', linestyle='--', label='Experimental Rg')
 
