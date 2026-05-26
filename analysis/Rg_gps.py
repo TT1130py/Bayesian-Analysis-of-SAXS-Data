@@ -1,5 +1,14 @@
 #####----- Compare radius of gyration distributions between multiple sets of reweighed structures
 
+#This script will compare radius of gyration values across different grid point simulations for both prior and posterior weights
+#Each gridpoint dataset requires a number of arguments:
+    #Path to the posterior weights file
+    #Path to the GRID sum file
+    #Path to the simulated saxs curves directory
+    #d_rho and r0 values
+        #All of these variables must additionally be added into the arrays located right above the FUNCTIONS section
+#The wam variable is the number of data subsets utilized in a specific run
+
 #####----- IMPORTS
 import numpy as np
 import pandas as pd
