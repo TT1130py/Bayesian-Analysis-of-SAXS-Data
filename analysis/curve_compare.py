@@ -72,9 +72,10 @@ def match_files(sim_file, save_path, dro, r0):
 
     for file in sorted_files:
         parts = file.split(os.sep)
-        frac_folder = [p for p in parts if p.startswith('mm')][0]
+        frac_folder = [p for p in parts if p.startswith('mm') and '_' in p][0]
 
-        struct_frac_path = os.path.join(structure_path, frac_folder)
+        parent_folder = frac_folder.split('_')[0]
+        struct_frac_path = os.path.join(structure_path, parent_folder, frac_folder)
         pdbs = glob.glob(os.path.join(struct_frac_path, "mm*.pdb"))
 
         pdbs.sort()
