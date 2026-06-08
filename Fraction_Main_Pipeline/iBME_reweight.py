@@ -182,7 +182,7 @@ weight_files_sorted = sorted(weight_files, key=lambda x: int(re.search(r"_(\d+)\
 best_weight_file = weight_files_sorted[-1]
 
 # Get a sorted list of ALL structure names to map the weights back to the PDBs
-all_structures = glob.glob(os.path.join(struct_path, "mm*", "*.pdb"))
+all_structures = glob.glob(os.path.join(struc_path, "mm*", "*.pdb"))
 contents = pd.DataFrame(natsorted([os.path.basename(x) for x in all_structures]))
 
 opt_weight = pd.read_csv(best_weight_file, sep='\s+', header=None)
