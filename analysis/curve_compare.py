@@ -12,8 +12,8 @@ from scipy.stats import linregress
 import matplotlib.lines as mlines
 
 #####----- PATHS, ARGUMENTS, REQUIREMENTS
-experimental_data = "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
-structure_path = "/users/t/j/tjaglal/structures"
+experimental_data = "/path/to/experimental/file"
+structure_path = "/path/to/structure/files"
 output_path = ''
 
 ## Edit here and/or add another subset for every weight file used

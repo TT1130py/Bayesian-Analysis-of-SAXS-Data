@@ -30,11 +30,11 @@ else:
     print("System not supported")
 
 #path to the experimental SAXS data
-path_exp_file = "/gpfs1/home/t/j/tjaglal/experimental_data"
+path_exp_file = "/path/to/experimental/data"
 #path to the "structure weights sorted" file that contains structure file name and its weight (output from iBME)
 
 #path to the simulated SAXS curves of above files
-structure_path = "/gpfs1/home/t/j/tjaglal/structures"
+structure_path = "/path/to/structure/files"
 
 ##########------ FUNCTIONS
 def match_files(sim_file):

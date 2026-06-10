@@ -32,8 +32,8 @@ theta_path = os.path.join(args.main_path, "saxs_dro_30_to_50_r0_1.22_to_1.42_the
 best_gp = 10
 ##
 
-path_exp_file = "/gpfs1/home/t/j/tjaglal/experimental_data"
-structure_path = "/gpfs1/home/t/j/tjaglal/structures"
+path_exp_file = "/path/to/experimental/data"
+structure_path = "/path/to/structure/files"
 
 #####----- FUNCTIONS
 

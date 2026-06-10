@@ -11,12 +11,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 #####----- PATHS, ARGUMENTS, REQUIREMENTS
-experimental_data = "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
+experimental_data = "/path/to/experimental/data"
 experimental_rg = 6.7 * 10 #convert to angstrom
-post_weights_path = "/home/malab/Desktop/Rg_test/structure_weights_sorted_2026-04-24.txt"
-save_path = "/home/malab/Desktop/Rg_test"
-grid_path = "/home/malab/Desktop/Rg_test/GRID_sum.txt"
-out_path = "/home/malab/Desktop/Rg_test"
+post_weights_path = "/posterior/weights/file/from/iBME/run"
+save_path = "/save/path"
+grid_path = "/GRID_sum.txt/file/from/iBME/run"
+out_path = "/output/path"
 best_dro = 30
 best_r0 = 1.34
 

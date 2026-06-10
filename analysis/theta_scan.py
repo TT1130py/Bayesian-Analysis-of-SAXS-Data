@@ -25,13 +25,13 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 #parser.add_argument("r0_min", type=str)
 #parser.add_argument("r0_max", type=str)
 
-exp_path = "/home/tjaglal/Structures/Experiment/SASDLU4.dat"
-struc_path = "/home/tjaglal/Structures/"
+exp_path = "/path/to/experimental/file"
+struc_path = "/path/to/structure/files"
 #args = parser.parse_args()
-trun_path = "/home/tjaglal/Structures/Experiment/SASDLU4_trun.dat"
-out_path = "/home/tjaglal/iBME/theta_scan"
+trun_path = "/path/to/truncated/experimental/file"
+out_path = "/output/path"
 today = date.today()
-save_path = "/home/tjaglal/theta_scan_files"
+save_path = "/save/path"
 
 
 ######## PARAMS

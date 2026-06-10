@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 #####----- PATHS, ARGUMENTS, REQUIREMENTS
-experimental_data = "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
+experimental_data = "/path/to/experimental/file"
 experimental_rg = 6.7 * 10 #convert to angstrom
 output_path = ''
 
