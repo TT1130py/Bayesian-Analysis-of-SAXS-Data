@@ -13,9 +13,9 @@ from gp_files import iBME_script
 parser = argparse.ArgumentParser(description="Run iBME reweighting on fractions")
 parser.add_argument("theta", type=float)
 parser.add_argument("save_path", type=str)
-exp_path = "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
-trun_path = "/users/t/j/tjaglal/experimental_data/SASDLU4_truncated.dat"
-struc_path = "/users/t/j/tjaglal/structures"
+exp_path = "/path/to/experimental/file"
+trun_path = "/path/to/truncated/experimental/file"
+struc_path = "/path/to/structure/files"
 args = parser.parse_args()
 
 

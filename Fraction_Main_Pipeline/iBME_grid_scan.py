@@ -15,9 +15,9 @@ parser.add_argument("frame_path", type=str)
 args = parser.parse_args()
 
 #Other paths
-path_main = "/users/t/j/tjaglal/Projects/iBME"
-path_structures = "/users/t/j/tjaglal/structures"
-path_exp_file = "/users/t/j/tjaglal/experimental_data"
+path_main = "/main/path"
+path_structures = "/path/to/structure/files"
+path_exp_file = "/path/to/experimental/data"
 contents = pd.DataFrame(natsorted(os.listdir(path_structures)))
 calc_rows_path = "{}/GP{}/calc_rows.txt"
 out_name = "{}/GP{}/"

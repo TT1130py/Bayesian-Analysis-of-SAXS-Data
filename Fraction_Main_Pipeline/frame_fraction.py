@@ -15,16 +15,16 @@ cd = time.strftime("%Y%m%d-%H%M%S", time.localtime(epoch))
 today = date.today()
 
 ############---------- PATHS
-path_frames = "/users/t/j/tjaglal/structures"
+path_frames = "/path/to/structure/files"
 folder_pattern = os.path.join(path_frames, "mm*", "mm*_*")
 structure_folders = glob.glob(folder_pattern)
 
-path_exp_file = "/users/t/j/tjaglal/experimental_data"
-path_main = "/users/t/j/tjaglal/Projects/iBME"
-path_shell = "/users/t/j/tjaglal/shell"
+path_exp_file = "/path/to/experimental/data"
+path_main = "/main/path"
+path_shell = "/path/to/shell/job/files"
 
 #Make output file
-path_results = "/gpfs1/home/t/j/tjaglal/Projects/iBME/pepsi_result"
+path_results = "/results/output"
 sub_dir_num = 0
 run_fol = "run_{}_{}"
 sub_path = os.path.join(path_results, run_fol)
