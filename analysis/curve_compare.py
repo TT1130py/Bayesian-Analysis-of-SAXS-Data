@@ -165,7 +165,7 @@ def VACC_average_curve(sim_file, pdb_names, s_val, iq_val):
     ordered_weights = np.array([weight_map.get(name, 0.0) for name in pdb_names])
     iq_array = np.array(iq_val)
 
-    prior_iq = np.mean(iq_array, axis=1)
+    prior_iq = np.mean(iq_array, axis=0)
 
     weighted_matrix = iq_array * ordered_weights[:, np.newaxis]
     avg_iq = np.sum(weighted_matrix, axis=0)
