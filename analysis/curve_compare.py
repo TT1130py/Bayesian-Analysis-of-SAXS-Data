@@ -55,10 +55,56 @@ def experimental_curve(path_exp_file, sim_length, save_path):
 
     return s_trun, iq_trun, err_trun
 
+def dynamic_rg_guiner(s, iq, min_points=5, max_points=60, is_strict_s=True):
+    valid_idx = iq > 0
+    s_valid = s[valid_idx]
+    iq_valid = iq[valid_idx]
+
+    best_rg = np.nan
+    best_r2 = 0.0
+    best_points = 0
+
+    for i in range(min_points, min(max_points, len(s_valid))):
+        s_fit = s_valid[:i]
+        iq_fit = iq_valid[:i]
+
+        x = s_fit**2
+        y = np.log(iq_fit)
+
+        slope, intercept, r_value, p_value, std_Err = linregress(x,y)
+
+        if slope >= 0:
+            continue
+
+        if is_strict_s:
+            rg = np.sqrt(-3 * slope) / (2 * np.pi)
+            q_max = 2 * np.pi * s_fit[-1]
+        else:
+            rg = np.sqrt(-3 * slope)
+            q_max = s_fit[-1]
+
+        r2 = r_value**2
+        q_rg_lim = q_max * rg
+
+        if q_rg_lim <= 1.3 and r2 > 0.99:
+            best_rg = rg
+            best_r2 = r2
+            best_points = i
+        else:
+            break
+
+    if np.isnan(best_rg):
+        print("Could not find optimal guinier region")
+    else:
+        print("Guinier region found using {best_points} points")
+
+    return best_rg, best_r2
+
 def rg_guinier(s, iq, fit_points):
     valid_idx = iq > 0
     s_valid = s[valid_idx]
     iq_valid = iq[valid_idx]
+
 
     s_low = s_valid[:fit_points]
     iq_low = iq_valid[:fit_points]
@@ -73,6 +119,7 @@ def rg_guinier(s, iq, fit_points):
     rg = np.sqrt(-3 * slope)
 
     return rg, r_value**2
+
 def match_files(sim_file, save_path, dro, r0):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
     sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
@@ -193,7 +240,7 @@ def main():
     lent = 1000
     #Will be overwritten for real plotting
     angletrun, intensetrun, errtrun = experimental_curve(experimental_data, lent)
-    exp_rg, exp_r2 = rg_guinier(angletrun, intensetrun, 15)
+    exp_rg, exp_r2 = dynamic_rg_guiner(angletrun, intensetrun)
 
     for i in range(wam):
         s, concat_merge, weights, f_name = match_files(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i])
@@ -202,8 +249,8 @@ def main():
         wiq_arr.append(iq_weighted)
         piq_arr.append(iq_prior)
 
-        post_rg, post_r2 = rg_guinier(s_weighted, iq_weighted, 15)
-        prior_rg, prior_r2 = rg_guinier(s_weighted, iq_prior, 15)
+        post_rg, post_r2 = dynamic_rg_guiner(s_weighted, iq_weighted)
+        prior_rg, prior_r2 = dynamic_rg_guiner(s_weighted, iq_prior)
         pos_rg_arr.append(post_rg)
         pri_rg_arr.append(prior_rg)
 
