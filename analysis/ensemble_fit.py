@@ -5,6 +5,8 @@ from natsort import natsort_keygen, natsorted
 import argparse
 import os
 import glob
+from scipy.stats import linregress
+import matplotlib.lines as mlines
 
 system = "VACC" #Either VACC or Local
 ##########------ PLOT SAXS CURVE COMPARISON OF EXPERIMENT VS WEIGHTED AVERAGE SIMULATION
@@ -181,6 +183,25 @@ def experimental_curve(path_exp_file, sim_length):
 
     return s_trun, iq_trun, err_trun, s, iq, err
     print("Breakpt")
+
+def rg_guinier(s, iq, fit_points):
+    valid_idx = iq > 0
+    s_valid = s[valid_idx]
+    iq_valid = iq[valid_idx]
+
+    s_low = s_valid[:fit_points]
+    iq_low = iq_valid[:fit_points]
+
+    x = s_low**2
+    y = np.log(iq_low)
+
+    slope, intercept, r_value, p_value, std_err = linregress(x, y)
+    if slope >= 0:
+        print("Positive slope")
+        return np.nan, r_value**2
+    rg = np.sqrt(-3 * slope)
+
+    return rg, r_value**2
 
 def plot_compare(s_sim, iq_sim, iq_prior, s, iq, err, s_full, iq_full, err_full, f_name):
     scale = np.sum(iq * iq_sim) / np.sum(iq_sim**2)
