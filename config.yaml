@@ -13,14 +13,64 @@ compare_weights:
 
 #####----- curve_compare.py CONFIG
 curve_compare:
-  experimental_data: ""
-  structure_path: ""
-  output_path: ""
-  lent: ""
+  experimental_data: "/users/t/j/tjaglal/experimental_data"
+  structure_path: "/users/t/j/tjaglal/structures"
+  output_path: "/users/t/j/tjaglal/Projects/iBME"
+  lent: 1000
   post_weights_1: ""
   grid_sum_1: ""
   save_path_1: ""
   best_dro_1: ""
   best_r0_1: ""
 
+#####----- ensemble_fit.py CONFIG
+ensemble_fit:
+  path_exp_file: ""
+  structure_path: ""
+  dro:
+  r0:
+  save_path: ""
+  sim_path: ""
+
+#####----- file_curve.py CONFIG
+file_curve:
+  path_exp_file: "/users/t/j/tjaglal/experimental_data"
+  search_path: "/users/t/j/tjaglal"
+  save_path: "/users/t/j/tjaglal/Projects/iBME/analysis"
+
+#####----- plot_theta.py CONFIG
+plot_theta:
+  out_path: "/users/t/j/tjaglal/Projects/theta_scan/30_50_1.44_1.62_1000_10000"
+  dro_min: 30
+  dro_max: 50
+  r0_min: 1.44
+  r0_max: 1.64
+  theta_val_1: 1000
+  theta_val_2: 2000
+  theta_val_3: 4000
+  theta_val_4: 6000
+  theta_val_5: 8000
+  theta_val_6: 10000
+
+#####----- Rg_compare.py CONFIG
+rg_compare:
+  experimental_data: "/users/t/j/tjaglal/experimental_data"
+  experimental_rg: 67
+  post_weights_path: ""
+  save_path: ""
+  grid_path: "/GRID_sun.txt"
+  out_path: ""
+  best_dro: 30
+  best_r0: 1.343
+
+#####----- Rg_gps.py CONFIG
+rg_gps:
+  experimental_data: "/users/t/j/tjaglal/experimental_data"
+  experimental_rg: 67
+  output_path: ""
+  post_weights_1: ""
+  grid_sum_1: ""
+  save_path_1: ""
+  best_dro_1: ""
+  best_r0_1: ""
 
