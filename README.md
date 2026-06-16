@@ -33,19 +33,7 @@ my-project/
 ```
 ***
 
-### Folders
-#### In depth descriptions of scripts within each folder can be found in specific folder readme
-#### Fraction_Main_Pipeline/  
-Main ensemble refinement protocol
-#### Loops
-Supplementary scripts for theoretical SAXS curve calculations
-#### analysis
-Figure generation and other analysis scripts for refinement output
-#### gp_files
-Required modules and tools for running refinement scripts
-#### tutorial
-Jupyter notebooks with step by step instructions and descriptions of refinement code. Pipeline cannot be run from these notebooks, the main .py files must be used
-### Content
+
 
 
 
