@@ -11,7 +11,7 @@ compare_weights:
   save_path: ""
   cutoff: ""
 
-#####----- curve_compare.py CONFIG
+#####----- curve_compare.py CONFIG (NOTE: additional data (post_weights_2,etc..) must also be added into the source code)
 curve_compare:
   experimental_data: "/users/t/j/tjaglal/experimental_data"
   structure_path: "/users/t/j/tjaglal/structures"
@@ -63,7 +63,7 @@ rg_compare:
   best_dro: 30
   best_r0: 1.343
 
-#####----- Rg_gps.py CONFIG
+#####----- Rg_gps.py CONFIG (NOTE: additional data (post_weights_2,etc..) must also be added into the source code)
 rg_gps:
   experimental_data: "/users/t/j/tjaglal/experimental_data"
   experimental_rg: 67
