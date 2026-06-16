@@ -1,5 +1,5 @@
 #####----- Compare SAXS curves between multiple sets of reweighed structures
-
+import argparse
 #####----- IMPORTS
 import pandas as pd
 import numpy as np
@@ -10,27 +10,10 @@ from natsort import natsorted
 import seaborn as sns
 from scipy.stats import linregress
 import matplotlib.lines as mlines
+import yaml
 
-#####----- PATHS, ARGUMENTS, REQUIREMENTS
-experimental_data = "/path/to/experimental/file"
-structure_path = "/path/to/structure/files"
-output_path = ''
+from analysis.Rg_gps import output_path
 
-## Edit here and/or add another subset for every weight file used
-post_weights_1 = ""
-grid_sum_1 = "" #this is grid sum
-save_path_1 = ""
-best_dro_1 = ""
-best_r0_1 = ""
-
-wam = ""
-
-## Add new variables to list
-dro_list = [best_dro_1]
-r0_list = [best_r0_1]
-post_weights_list = [post_weights_1]
-grid_paths_list = [grid_sum_1]
-save_paths_list = [save_path_1]
 
 #####----- FUNCTIONS
 def experimental_curve(path_exp_file, sim_length, save_path):
@@ -120,7 +103,7 @@ def rg_guinier(s, iq, fit_points):
 
     return rg, r_value**2
 
-def match_files(sim_file, save_path, dro, r0):
+def match_files(sim_file, save_path, dro, r0, structure_path):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
     sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
 
@@ -175,7 +158,7 @@ def VACC_average_curve(sim_file, pdb_names, s_val, iq_val):
     return len(sim_merge), sim_merge.iloc[:, 0], sim_merge.iloc[:, 1], sim_merge.iloc[:, 2]
     print("Breakpt")
 
-def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pri_rg_arr, exp_rg):
+def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pri_rg_arr, exp_rg, wam, dro_list, r0_list):
     colors_post = sns.color_palette("flare", n_colors=wam)
     colors_pri = sns.color_palette("crest", n_colors=wam)
 
@@ -231,19 +214,52 @@ def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pr
     return fig, fig_2
 
 def main():
+
+    #####----- Initialize CLI arguments and configuration
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--config", type=str, default="config.yaml", help="Path to main YAML file")
+    args = parser.parse_parser_args() if hasattr(parser, 'parse_parser_args') else parser.parse_args()
+
+    with open(args.config, "r") as f:
+        master_config = yaml.safe_load(f)
+
+    cc_config = master_config.get("curve_compare", {})
+    if not cc_config:
+        print("curve_compare config not found")
+        return
+
+    experimental_data = cc_config["experimental_data", ""]
+    structure_path = cc_config["structure_path", ""]
+    output_path = cc_config["output_path", ""]
+
+    lent_val = cc_config["lent"]
+    lent = int(lent_val) if lent_val not in ["", None] else 1000
+
+    dro_list = [cc_config.get("best_dro_1", "")]
+    r0_list = [cc_config.get("best_r_0", "")]
+    post_weights_list = [cc_config.get("post_weights_1", "")]
+    grid_paths_list = [cc_config.get("grid_sum_1", "")]
+    save_paths_list = [cc_config.get("save_path_1", "")]
+
+    wam = len([x for x in post_weights_list if x not in ["", None]])
+    if wam == 0:
+        print("No weights found")
+        return
+
+    #####----- Run main script
     s_arr = []
     wiq_arr = []
     piq_arr = []
     pos_rg_arr = []
     pri_rg_arr = []
 
-    lent = 1000
     #Will be overwritten for real plotting
     angletrun, intensetrun, errtrun = experimental_curve(experimental_data, lent)
     exp_rg, exp_r2 = dynamic_rg_guiner(angletrun, intensetrun)
 
     for i in range(wam):
-        s, concat_merge, weights, f_name = match_files(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i])
+        s, concat_merge, weights, f_name = match_files(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], structure_path)
         lent, s_weighted, iq_weighted, iq_prior = VACC_average_curve(post_weights_list[i], f_name, s, concat_merge)
         s_arr.append(s_weighted)
         wiq_arr.append(iq_weighted)
@@ -255,7 +271,7 @@ def main():
         pri_rg_arr.append(prior_rg)
 
     angletrun, intensetrun, errtrun = experimental_curve(experimental_data, lent)
-    post_figure, pri_figure = plot_curves(s_arr, wiq_arr, piq_arr, angletrun, intensetrun, errtrun, exp_rg, pos_rg_arr, pri_rg_arr)
+    post_figure, pri_figure = plot_curves(s_arr, wiq_arr, piq_arr, angletrun, intensetrun, errtrun, pos_rg_arr, pri_rg_arr, exp_rg, wam, dro_list, r0_list)
 
     post_figure.savefig(f"{output_path}/posterior_saxs_curves.png", dpi=300, bbox_inches='tight')
     pri_figure.savefig(f"{output_path}/prior_saxs_curves.png", dpi=300, bbox_inches='tight')
