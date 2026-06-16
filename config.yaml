@@ -1,0 +1,26 @@
+#####----- PATHS AND SYSTEM SETTINGS FOR ALL ANALYSIS SCRIPTS
+
+## Each section below defines the parameters for a specific analysis code. Any parameters that need to be added, deleted, or modified should be done so here
+
+#####----- compare_weights.py CONFIG
+compare_weights:
+  weights_path_1: ""
+  path_1_type: ""
+  weights_path_2: ""
+  path_2_type: ""
+  save_path: ""
+  cutoff: ""
+
+#####----- curve_compare.py CONFIG
+curve_compare:
+  experimental_data: ""
+  structure_path: ""
+  output_path: ""
+  lent: ""
+  post_weights_1: ""
+  grid_sum_1: ""
+  save_path_1: ""
+  best_dro_1: ""
+  best_r0_1: ""
+
+
