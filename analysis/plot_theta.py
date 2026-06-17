@@ -2,14 +2,35 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
+import yaml
 
-# Match the paths and params from your original run
-out_path = "/users/t/j/tjaglal/Projects/iBME/theta_scan/30_50_1.44_1.62_1000_10000"
-dro_min = 30
-dro_max = 50
-r0_min = 1.44
-r0_max = 1.64
-theta_vals = np.array([1000, 2000, 4000, 6000, 8000, 10000])
+#####----- CLI Config and Initialization
+parser= argparse.ArgumentParser()
+parser.add_argument("--config", type=str, default="config.yaml", help="Path to main yaml file")
+args = parser.parse_parser_args() if hasattr(parser, 'parse_parser_args') else parser.parse_args()
+
+with open(args.config, "r") as f:
+    master_config = yaml.safe_load(f)
+
+pt_config = master_config.get("plot_theta", {})
+if not pt_config:
+    print("plot theta config not found")
+    return
+
+out_path = pt_config.get["out_path", ""]
+dro_min = pt_config.get["dro_min", ""]
+dro_max = pt_config.get["dro_max", ""]
+r0_min = pt_config.get["r0_min", ""]
+r0_max = pt_config.get["r0_max", ""]
+theta_val_1 = pt_config.get["theta_val_1", ""]
+theta_val_2 = pt_config.get["theta_val_2", ""]
+theta_val_3 = pt_config.get["theta_val_3", ""]
+theta_val_4 = pt_config.get["theta_val_4", ""]
+theta_val_5 = pt_config.get["theta_val_5", ""]
+theta_val_6 = pt_config.get["theta_val_6", ""]
+
+#####----- MAIN
 
 all_chi2 = []
 all_skl = []
