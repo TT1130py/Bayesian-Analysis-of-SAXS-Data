@@ -2,11 +2,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
-
-######--------- PATHS
-
-reweighted_path = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_2026-05-14.txt"
-save_path = "/home/malab/Desktop/compare_weights_info" #optional
+import argparse
+import yaml
 
 #####--------- FUNCTIONS
 
@@ -46,6 +43,21 @@ def plot_cumulative(pos, pri, idx):
     return fig
 
 #####---------- MAIN
+#####----- Initialize CLI arguments and configuration
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--config", type=str, default="config.yaml", help="Path to main YAML file")
+args = parser.parse_parser_args() if hasattr(parser, 'parse_parser_args') else parser.parse_args()
+
+with open(args.config, "r") as f:
+    master_config = yaml.safe_load(f)
+
+cw_config = master_config.get("cumulative_weights", {})
+
+
+reweighted_path = cw_config.get["reweighted_path", ""]
+save_path = cw_config.get["save_path", ""]
+
 pos_w, pri_w, index = cumulative_weights_all(reweighted_path)
 fig = plot_cumulative(pos_w, pri_w, index)
 fig.savefig(os.path.join(save_path, "cumul_weights_r0r_t2000.png"))

@@ -10,19 +10,9 @@ from natsort import natsorted
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-#####----- PATHS, ARGUMENTS, REQUIREMENTS
-experimental_data = "/path/to/experimental/data"
-experimental_rg = 6.7 * 10 #convert to angstrom
-post_weights_path = "/posterior/weights/file/from/iBME/run"
-save_path = "/save/path"
-grid_path = "/GRID_sum.txt/file/from/iBME/run"
-out_path = "/output/path"
-best_dro = 30
-best_r0 = 1.34
-
 #####----- FUNCTIONS
 
-def concat_rg(best_dro, best_r0):
+def concat_rg(best_dro, best_r0, grid_path, save_path):
     grid_df = pd.read_csv(grid_path, sep=',')
     gp = grid_df.index[(grid_df['d_rho'] == best_dro) & (grid_df['r0'] == best_r0)].tolist()[0]
 
@@ -66,7 +56,7 @@ def concat_rg(best_dro, best_r0):
 
     return rg_df
 
-def rg_dist_plot(rg_df, post_weights_path):
+def rg_dist_plot(rg_df, post_weights_path, experimental_rg, out_path):
     prior_weights = np.ones(len(rg_df)) / len(rg_df)
     post_weights = pd.read_csv(post_weights_path, sep='\s+')
     post_weights.columns = ['index', 'weight', 'PDB_Name']
@@ -88,14 +78,35 @@ def rg_dist_plot(rg_df, post_weights_path):
     sns.kdeplot(x=rg_sim_post, weights=post_weights, color='blue', label='Posterior ensemble')
     plt.axvline(x=experimental_rg, color='green', linestyle='--', label='Experimental Rg')
 
-    plt.xlabel('Rg distribution in Angstrom')
+    plt.xlabel('Rg in Angstrom')
     plt.ylabel('Density')
-    plt.title('Rg distrubtion shift from prior to posterior')
+    plt.title('Rg distrubtion in prior and posterior ensembles')
     plt.legend()
 
     plt.savefig("{}/rg_plot.png".format(out_path), dpi=300, bbox_inches='tight')
 #####----- MAIN
+parser= argparse.ArgumentParser()
+parser.add_argument("--config", type=str, default="config.yaml", help="Path to main yaml file")
+args = parser.parse_parser_args() if hasattr(parser, 'parse_parser_args') else p
+arser.parse_args()
 
-rg_df = concat_rg(best_dro, best_r0)
-rg_dist_plot(rg_df, post_weights_path)
+with open(args.config, "r") as f:
+    master_config = yaml.safe_load(f)
+
+rc_config = master_config.get("rg_compare", {})
+if not rc_config:
+    print("rg_compare config not found")
+    return
+
+experimental_data = rg_config.get["experimental_data", ""]
+experimental_rg = rg_config.get["experimental_rg", ""]
+post_weightss_path = rg_config.get["post_weights_path", ""]
+save_path = rg_config.get["save_path", ""]
+grid_path = rg_config.get["grid_path", ""]
+out_path = rg_config.get["out_path", ""]
+best_dro = rg_config.get["best_dro", ""]
+best_r0 = rg_config.get["best_r0", ""]
+
+rg_df = concat_rg(best_dro, best_r0, grid_path, save_path)
+rg_dist_plot(rg_df, post_weights_path, experimental_rg, out_path)
 

@@ -1,6 +1,6 @@
 import pandas as pd
 
-weights_path_1 = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_2026-05-05.txt"
+weights_path_1 = "/home/malab/Desktop/compare_weights_info/structure_weights_sorted_2026-05-14.txt"
 path_1_type = "SAXS"
 weights_path_2 = "/home/malab/Desktop/compare_weights_info/Sorted_Results_NMR_Full.csv"
 path_2_type = "NMR"
@@ -57,4 +57,4 @@ final = rank_weights(df)
 print("Breakpt")
 
 ##Optional save file as csv
-final.to_csv("{}/compared_weights_t4000.csv".format(save_path))
+final.to_csv("{}/compared_weights_r0r_t2000.csv".format(save_path))

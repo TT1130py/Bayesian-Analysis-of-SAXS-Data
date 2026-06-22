@@ -5,17 +5,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import seaborn as sns
+import argparse
+import yaml
 
-#####----- PATHS, ARGUMENTS, REQUIREMENTS
-path_exp_file = "/home/malab/Desktop/BioEn-master/examples/scattering/files/experimental_data/"
-search_path = "/home/malab/Desktop/out_files"
-save_path = "/home/malab/Downloads"
-
-files = ["mm016_016", "mm064_742", "mm016_003", "mm016_021", "mm016_698", "mm016_048", "mm256_832"]
 #####----- FUNCTIONs
 
 def experimental_curve(path_exp_file, sim_length):
-    exp_pd = pd.DataFrame(pd.read_csv("{}/SASDLU4.dat".format(path_exp_file),
+    exp_pd = pd.DataFrame(pd.read_csv(path_exp_file,
                                       header=None, sep=r"\s+"))
 
     s = exp_pd.loc[:,0]
@@ -45,7 +41,7 @@ def find_curves(files, search_path):
     lent = len(q_np)
     return lent, q, iq
 
-def plot_curves(s, iq, err, files, q_arr, iq_arr):
+def plot_curves(s, iq, err, files, q_arr, iq_arr, save_path):
     colors = sns.color_palette("bright", n_colors=len(files))
 
     fig, ax = plt.subplots(figsize = (10,10))
@@ -66,6 +62,34 @@ def plot_curves(s, iq, err, files, q_arr, iq_arr):
     fig.savefig(save_path_2, dpi=300)
 
 def main():
+
+    #####----- Initialize CLI arguments and configuration
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--config", type=str, default="config.yaml", help="Path to main YAML file")
+    args = parser.parse_parser_args() if hasattr(parser, 'parse_parser_args') else parser.parse_args()
+
+    with open(args.config, "r") as f:
+        master_config = yaml.safe_load(f)
+
+    fc_config = master_config.get("file_curve", {})
+    if not fc_config:
+        print("file_curve not found in config")
+        return
+
+    path_exp_file = fc_config.get["path_exp_file", ""]
+    search_path = fc_config.get["search_path", ""]
+    save_path = fc_config.get["save_path", ""]
+
+    file_1 = fc_config.get["file_1", ""]
+    file_2 = fc_config.get["file_2", ""]
+    file_3 = fc_config.get["file_3", ""]
+    file_4 = fc_config.get["file_4", ""]
+    file_5 = fc_config.get["file_5", ""]
+    file_6 = fc_config.get["file_6", ""]
+
+    #####----- MAIN
+    files = [file_1, file_2, file_3, file_4, file_5, file_6]
     length, q_files, iq_files = find_curves(files, search_path)
     s_exp, iq_exp, err_exp = experimental_curve(path_exp_file, length)
     reference_q = q_files[0]
@@ -75,7 +99,7 @@ def main():
 
     # 5. Plot using the synchronized reference_q
     plot_curves(
-        s_exp, iq_exp, err_exp, files, q_files, iq_files
+        s_exp, iq_exp, err_exp, files, q_files, iq_files, save_path
     )
 
 if __name__ == "__main__":
