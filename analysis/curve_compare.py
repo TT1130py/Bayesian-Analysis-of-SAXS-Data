@@ -12,12 +12,10 @@ from scipy.stats import linregress
 import matplotlib.lines as mlines
 import yaml
 
-from analysis.Rg_gps import output_path
-
-
+type = "c_term"
 #####----- FUNCTIONS
-def experimental_curve(path_exp_file, sim_length, save_path):
-    exp_pd = pd.DataFrame(pd.read_csv("{}/SASDLU4.dat".format(path_exp_file),
+def experimental_curve(path_exp_file, sim_length):
+    exp_pd = pd.DataFrame(pd.read_csv(path_exp_file,
                                       header=None, sep=r"\s+"))
 
     s = exp_pd.loc[:,0]
@@ -33,12 +31,12 @@ def experimental_curve(path_exp_file, sim_length, save_path):
     plt.ylabel("i(q)")
     plt.xlabel("s")
     plt.title("Experimental SAXS curve with x log")
-    save_path_1 = "{}/experiment.png".format(save_path)
-    plt.savefig(save_path_1, dpi=300)
+    #save_path_1 = "{}/experiment.png".format(save_path)
+    #plt.savefig(save_path_1, dpi=300)
 
     return s_trun, iq_trun, err_trun
 
-def dynamic_rg_guiner(s, iq, min_points=5, max_points=60, is_strict_s=True):
+#def dynamic_rg_guiner(s, iq, min_points=5, max_points=60, is_strict_s=True):
     valid_idx = iq > 0
     s_valid = s[valid_idx]
     iq_valid = iq[valid_idx]
@@ -51,6 +49,13 @@ def dynamic_rg_guiner(s, iq, min_points=5, max_points=60, is_strict_s=True):
         s_fit = s_valid[:i]
         iq_fit = iq_valid[:i]
 
+        if hasattr(s_fit, "to_numpy"):
+            s_fit_arr = s_fit.to_numpy()
+        elif hasattr(s_fit, "values"):
+            s_fit_arr = s_fit.values
+        else:
+            s_fit_arr = np.asarray(s_fit)
+
         x = s_fit**2
         y = np.log(iq_fit)
 
@@ -61,10 +66,10 @@ def dynamic_rg_guiner(s, iq, min_points=5, max_points=60, is_strict_s=True):
 
         if is_strict_s:
             rg = np.sqrt(-3 * slope) / (2 * np.pi)
-            q_max = 2 * np.pi * s_fit[-1]
+            q_max = 2 * np.pi * s_fit_arr[-1]
         else:
             rg = np.sqrt(-3 * slope)
-            q_max = s_fit[-1]
+            q_max = s_fit_arr[-1]
 
         r2 = r_value**2
         q_rg_lim = q_max * rg
@@ -79,7 +84,7 @@ def dynamic_rg_guiner(s, iq, min_points=5, max_points=60, is_strict_s=True):
     if np.isnan(best_rg):
         print("Could not find optimal guinier region")
     else:
-        print("Guinier region found using {best_points} points")
+        print(f"Guinier region found using {best_points} points")
 
     return best_rg, best_r2
 
@@ -103,13 +108,126 @@ def rg_guinier(s, iq, fit_points):
 
     return rg, r_value**2
 
+def grab_rg(sim_file, save_path, dro, r0, pdb_names):
+    sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace(".pdb", "", regex=False)
+    weight_map = dict(zip(sim_pd['PDB_Name'], sim_pd['1']))
+    ordered_weights = np.array([weight_map.get(name, 0.0) for name in pdb_names])
+
+    grid_df = pd.read_csv(os.path.join(save_path, "grid_full.txt"), sep='\s+', header=None,
+                          names=['index', 'dro', 'r0'])
+    gp = grid_df.loc[(grid_df['dro'] == dro) & (grid_df['r0'] == r0), 'index'].iloc[0]
+
+    search_pattern = os.path.join(save_path, "mm*", f"GP{gp}", "Rg_env.dat")
+    sorted_files = natsorted(glob.glob(search_pattern))
+
+    rg_list = []
+    for file in sorted_files:
+        data = pd.read_csv(file, sep='\s+', header=None, names=['Rg'])
+        rg_list.extend(data['Rg'].tolist())
+
+    rg_array = np.array(rg_list)
+
+    prior_rg_real = np.mean(rg_array)
+    post_rg_real = np.sum(rg_array * ordered_weights)
+
+    return post_rg_real, prior_rg_real
+
+
+def cterm_grab_rg(sim_file, save_path, dro, r0, pdb_names):
+    sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace(".pdb", "", regex=False)
+    weight_map = dict(zip(sim_pd['PDB_Name'], sim_pd['1']))
+    ordered_weights = np.array([weight_map.get(name, 0.0) for name in pdb_names])
+
+    grid_df = pd.read_csv(os.path.join(save_path, "grid_full.txt"), sep='\s+', header=None,
+                          names=['index', 'dro', 'r0'])
+    gp = grid_df.loc[(grid_df['dro'] == dro) & (grid_df['r0'] == r0), 'index'].iloc[0]
+
+    search_pattern = os.path.join(save_path, "MD*_*", f"GP{gp}", "Rg_env.dat")
+    sorted_files = natsorted(glob.glob(search_pattern))
+
+    rg_list = []
+    for file in sorted_files:
+        data = pd.read_csv(file, sep='\s+', header=None, names=['Rg'])
+        rg_list.extend(data['Rg'].tolist())
+
+    rg_array = np.array(rg_list)
+
+    prior_rg_real = np.mean(rg_array)
+    post_rg_real = np.sum(rg_array * ordered_weights)
+
+    return post_rg_real, prior_rg_real
+
+def cterm_match_files(sim_file, save_path, dro, r0, structure_path, path_exp_file):
+    sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
+
+    grid_df = pd.read_csv(os.path.join(save_path, "grid_full.txt"), sep='\s+', header=None,
+                          names=['index', 'dro', 'r0'])
+    matching_rows = grid_df.loc[(grid_df['dro'] == dro) & (grid_df['r0'] == r0), 'index']
+    if matching_rows.empty:
+        print("\n" + "="*50)
+        print("ERROR: Could not find matching grid point!")
+        print(f"Looking for: dro = {dro} (type: {type(dro)}), r0 = {r0} (type: {type(r0)})")
+        print("\nAvailable unique 'dro' values in grid_full.txt:")
+        print(grid_df['dro'].unique()[:10]) # Print first 10 to inspect
+        print("\nAvailable unique 'r0' values in grid_full.txt:")
+        print(grid_df['r0'].unique()[:10])
+        print("="*50 + "\n")
+        raise ValueError(f"Grid coordinates (dro={dro}, r0={r0}) do not exist in {os.path.join(save_path, 'grid_full.txt')}")
+
+    gp = matching_rows.iloc[0]
+
+    compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(save_path, str(gp)))
+    compiled_df = pd.DataFrame(compiled_saxs).reset_index(drop=True)
+    iq_sim_matrix = pd.DataFrame(compiled_df.drop(columns=[0]).values)
+
+    true_pdb_order = []
+
+    search_pattern = os.path.join(save_path, "MD*_*", f"GP{gp}", "calc_saxs.txt")
+    sorted_files = natsorted(glob.glob(search_pattern))
+
+    for file in sorted_files:
+        parts = file.split(os.sep)
+        frac_folder = [p for p in parts if p.startswith('MD') and '_' in p][0]
+
+        parent_folder = frac_folder.split('_')[0]
+        struct_frac_path = os.path.join(structure_path, parent_folder, frac_folder)
+        pdbs = glob.glob(os.path.join(struct_frac_path, "MD*_center*.pdb"))
+
+        pdbs.sort()
+
+        for pdb in pdbs:
+            true_pdb_order.append(os.path.basename(pdb).replace('.pdb', ''))
+
+    pdb_names = pd.Series(true_pdb_order)
+
+    s_full = np.genfromtxt(path_exp_file, comments="#", usecols=0)
+    s_values = s_full[:iq_sim_matrix.shape[1]]
+
+    return s_values, iq_sim_matrix, None, pdb_names
+
+
 def match_files(sim_file, save_path, dro, r0, structure_path):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
     sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
 
     grid_df = pd.read_csv(os.path.join(save_path, "grid_full.txt"), sep='\s+', header=None,
                           names=['index', 'dro', 'r0'])
-    gp = grid_df.loc[(grid_df['dro'] == dro) & (grid_df['r0'] == r0), 'index'].iloc[0]
+    matching_rows = grid_df.loc[(grid_df['dro'] == dro) & (grid_df['r0'] == r0), 'index']
+    if matching_rows.empty:
+        print("\n" + "="*50)
+        print("ERROR: Could not find matching grid point!")
+        print(f"Looking for: dro = {dro} (type: {type(dro)}), r0 = {r0} (type: {type(r0)})")
+        print("\nAvailable unique 'dro' values in grid_full.txt:")
+        print(grid_df['dro'].unique()[:10]) # Print first 10 to inspect
+        print("\nAvailable unique 'r0' values in grid_full.txt:")
+        print(grid_df['r0'].unique()[:10])
+        print("="*50 + "\n")
+        raise ValueError(f"Grid coordinates (dro={dro}, r0={r0}) do not exist in {os.path.join(save_path, 'grid_full.txt')}")
+
+    gp = matching_rows.iloc[0]
 
     compiled_saxs = np.genfromtxt("{}/compiled_GPs/GP{}_all_saxs.txt".format(save_path, str(gp)))
     compiled_df = pd.DataFrame(compiled_saxs).reset_index(drop=True)
@@ -170,7 +288,7 @@ def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pr
         scale = np.sum(iq * iq_sim_arr[i]) / np.sum(iq_sim_arr[i] ** 2)
         scaled_iq_sim = iq_sim_arr[i] * scale
 
-        ax.plot(s_sim_arr[i], scaled_iq_sim, lw=3, label=fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]}", color=colors_post[i])
+        ax.plot(s_sim_arr[i], scaled_iq_sim, lw=3, zorder= i + 2, label=fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]}", color=colors_post[i])
     ax.set_ylabel("i(q)")
     ax.set_xlabel("s")
     ax.set_title("Posterior SAXS curves with experiment")
@@ -229,18 +347,18 @@ def main():
         print("curve_compare config not found")
         return
 
-    experimental_data = cc_config["experimental_data", ""]
-    structure_path = cc_config["structure_path", ""]
-    output_path = cc_config["output_path", ""]
+    experimental_data = cc_config.get("experimental_data", "")
+    structure_path = cc_config.get("structure_path", "")
+    output_path = cc_config.get("output_path", "")
 
     lent_val = cc_config["lent"]
     lent = int(lent_val) if lent_val not in ["", None] else 1000
 
-    dro_list = [cc_config.get("best_dro_1", "")]
-    r0_list = [cc_config.get("best_r_0", "")]
-    post_weights_list = [cc_config.get("post_weights_1", "")]
-    grid_paths_list = [cc_config.get("grid_sum_1", "")]
-    save_paths_list = [cc_config.get("save_path_1", "")]
+    dro_list = [cc_config.get("best_dro_1", ""), cc_config.get("best_dro_2", "")]
+    r0_list = [cc_config.get("best_r0_1", ""), cc_config.get("best_r0_2","")]
+    post_weights_list = [cc_config.get("post_weights_1", ""), cc_config.get("post_weights_2", "")]
+    grid_paths_list = [cc_config.get("grid_sum_1", ""), cc_config.get("grid_sum_2", "")]
+    save_paths_list = [cc_config.get("save_path_1", ""), cc_config.get("save_path_2", "")]
 
     wam = len([x for x in post_weights_list if x not in ["", None]])
     if wam == 0:
@@ -256,17 +374,23 @@ def main():
 
     #Will be overwritten for real plotting
     angletrun, intensetrun, errtrun = experimental_curve(experimental_data, lent)
-    exp_rg, exp_r2 = dynamic_rg_guiner(angletrun, intensetrun)
+    exp_rg, exp_r2 = rg_guinier(angletrun, intensetrun, 10)
 
     for i in range(wam):
-        s, concat_merge, weights, f_name = match_files(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], structure_path)
+        if type == "c_term":
+            s, concat_merge, weights, f_name = cterm_match_files(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], structure_path, experimental_data)
+        else:
+            s, concat_merge, weights, f_name = match_files(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], structure_path)
         lent, s_weighted, iq_weighted, iq_prior = VACC_average_curve(post_weights_list[i], f_name, s, concat_merge)
         s_arr.append(s_weighted)
         wiq_arr.append(iq_weighted)
         piq_arr.append(iq_prior)
 
-        post_rg, post_r2 = dynamic_rg_guiner(s_weighted, iq_weighted)
-        prior_rg, prior_r2 = dynamic_rg_guiner(s_weighted, iq_prior)
+        if type == "c_term":
+            post_rg, prior_rg = cterm_grab_rg(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], r0_list,
+                                        f_name)
+        else:
+             post_rg, prior_rg = grab_rg(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], r0_list, f_name)
         pos_rg_arr.append(post_rg)
         pri_rg_arr.append(prior_rg)
 
