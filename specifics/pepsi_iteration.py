@@ -23,7 +23,7 @@ def extract_chi2(file_path):
 
     return chi2_values
 
-def iterate_dir(type, sim_path):
+def iterate_dir(type, sim_path, gps):
     chi_avg = []
     for gp in gps:
         if type == "c_term":
@@ -52,7 +52,7 @@ def best_fit(all_chi):
 
     return min_index
 
-def structure_fit(min_gp, type):
+def structure_fit(sim_path, min_gp, type):
     results = []
     current_filename = None
 
@@ -88,7 +88,7 @@ def structure_fit(min_gp, type):
 
     return results
 
-def eval_structures(best_structures, cutoff, min_gp):
+def eval_structures(summary_file, best_structures, cutoff, min_gp):
     top = best_structures[:cutoff]
     with open(summary_file, "w") as out_file:
         # Write a clean, human-readable table header
@@ -106,6 +106,7 @@ def eval_structures(best_structures, cutoff, min_gp):
             )
 
 def main():
+
     #####----- Initialize CLI arguments and configuration
     parser = argparse.ArgumentParser()
 
@@ -126,7 +127,7 @@ def main():
     cutoff = int(pi_config.get("cutoff", ""))
     type = pi_config.get("type", "")
 
-    all_chi = iterate_dir(type, sim_path)
+    all_chi = iterate_dir(type, sim_path, gps)
     min_gp = best_fit(all_chi)
-    result = structure_fit(min_gp, type)
-    eval_structures(result, cutoff, gps)
+    result = structure_fit(sim_path, min_gp, type)
+    eval_structures(summary_file, result, cutoff, gps)
