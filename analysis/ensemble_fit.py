@@ -6,10 +6,58 @@ import argparse
 import os
 import glob
 import yaml
+from scipy.stats import linregress
+import matplotlib.lines as mlines
 
-##########------ PLOT SAXS CURVE COMPARISON OF EXPERIMENT VS WEIGHTED AVERAGE SIMULATION
+#####----- PLOT SAXS CURVE COMPARISON OF EXPERIMENT VS WEIGHTED AVERAGE SIMULATION
 
-##########------ FUNCTIONS
+#####----- FUNCTIONS
+
+def rg_guinier(s, iq, fit_points):
+    valid_idx = iq > 0
+    s_valid = s[valid_idx]
+    iq_valid = iq[valid_idx]
+
+
+    s_low = s_valid[:fit_points]
+    iq_low = iq_valid[:fit_points]
+
+    x = s_low**2
+    y = np.log(iq_low)
+
+    slope, intercept, r_value, p_value, std_err = linregress(x, y)
+    if slope >= 0:
+        print("Positive slope")
+        return np.nan, r_value**2
+    rg = np.sqrt(-3 * slope)
+
+    return rg, r_value**2
+
+def grab_rg(sim_file, save_path, dro, r0, pdb_names):
+    sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
+    sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace(".pdb", "", regex=False)
+    weight_map = dict(zip(sim_pd['PDB_Name'], sim_pd['1']))
+    ordered_weights = np.array([weight_map.get(name, 0.0) for name in pdb_names])
+
+    grid_df = pd.read_csv(os.path.join(save_path, "grid_full.txt"), sep='\s+', header=None,
+                          names=['index', 'dro', 'r0'])
+    gp = grid_df.loc[(grid_df['dro'] == dro) & (grid_df['r0'] == r0), 'index'].iloc[0]
+
+    search_pattern = os.path.join(save_path, "MD*_*", f"GP{gp}", "Rg_env.dat")
+    sorted_files = natsorted(glob.glob(search_pattern))
+
+    rg_list = []
+    for file in sorted_files:
+        data = pd.read_csv(file, sep='\s+', header=None, names=['Rg'])
+        rg_list.extend(data['Rg'].tolist())
+
+    rg_array = np.array(rg_list)
+
+    prior_rg_real = np.mean(rg_array)
+    post_rg_real = np.sum(rg_array * ordered_weights)
+
+    return post_rg_real, prior_rg_real
+
 def match_files(sim_file, dro, r0, save_path, structure_path):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
     sim_pd["PDB_Name"] = sim_pd["PDB_Name"].str.replace('.pdb', '', regex=False)
@@ -166,7 +214,7 @@ def experimental_curve(path_exp_file, sim_length, simu_path):
     return s_trun, iq_trun, err_trun, s, iq, err
     print("Breakpt")
 
-def plot_compare(s_sim, iq_sim, iq_prior, s, iq, err, s_full, iq_full, err_full, f_name, simu_path):
+def plot_compare(s_sim, iq_sim, iq_prior, s, iq, err, s_full, iq_full, err_full, f_name, simu_path, post_rg):
     scale = np.sum(iq * iq_sim) / np.sum(iq_sim**2)
 
     scaled_iq_sim = iq_sim * scale
@@ -183,7 +231,12 @@ def plot_compare(s_sim, iq_sim, iq_prior, s, iq, err, s_full, iq_full, err_full,
     ax.set_ylabel("i(q)")
     ax.set_xlabel("s")
     ax.set_title("Simulated SAXS fit with Experiment - truncated")
-    ax.legend()
+
+    leg_post = ax.legend(loc="upper right")
+    ax.add_artist(leg_post)
+
+    rg_handles_post = [mlines.Line2D([], [], color="none", label=f"Post rg: {post_rg:.2f} nm")]
+    ax.legend(handles=rg_handles_post, loc="lower left", title="Radius of Gyration ($R_g$)", handlelength=0, handletextpad=0)
     
     save_path_2 = "{}/truncated_fit.png".format(simu_path)
     fig.savefig(save_path_2, dpi=300)
@@ -234,11 +287,14 @@ def main():
     s, concat_merge, weights, f_name = match_files(real_file, dro, r0, save_path, structure_path)
     lent, s_weighted, iq_weighted, iq_prior = VACC_average_curve(real_file, f_name, s, concat_merge)
 
+    #Get the RG value
+    post_rg, prior_rg = grab_rg(real_file, save_path, dro, r0, f_name)
+
     # Create the SAXS curves from experimental data for plotting
     angletrun, intensetrun, errtrun, anglefull, intensefull, errfull = experimental_curve(path_exp_file, lent, simu_path)
 
     # Plot experiment vs weighted average simulation
-    plot_compare(s_weighted, iq_weighted, iq_prior, angletrun, intensetrun, errtrun, anglefull, intensefull, errfull, "GP0_all_saxs", simu_path)
+    plot_compare(s_weighted, iq_weighted, iq_prior, angletrun, intensetrun, errtrun, anglefull, intensefull, errfull, "GP0_all_saxs", simu_path, post_rg)
 
 if __name__ == '__main__':
     main()
