@@ -13,30 +13,30 @@ compare_weights:
 
 #####----- curve_compare.py CONFIG
 curve_compare:
-  experimental_data: "/users/t/j/tjaglal/experimental_data/SASDLS4.dat"
-  structure_path: "/users/t/j/tjaglal/cterm_structures"
-  output_path: "/users/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_13.36_r0_1.36_to_1.68_t1000"
-  lent: 1000
-  post_weights_1: "/gpfs1/home/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_13.36_r0_1.36_to_1.68_t1000/structure_weights_sorted_2026-06-16.txt" 
-  grid_sum_1: "/users/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_13.36_r0_1.36_to_1.68_t1000/GRID_sum.txt"
-  save_path_1: "/users/t/j/tjaglal/Projects/iBME/cterm_grid_sims/saxs_dro_-26.72_to_13.36_r0_1.36_to_1.68"
-  best_dro_1: 3.34
-  best_r0_1: 0.970
-  post_weights_2: "/gpfs1/home/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_13.36_r0_1.36_to_1.68_t1000/structure_weights_sorted_2026-06-16.txt" 
-  grid_sum_2: "/users/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_13.36_r0_1.36_to_1.68_t1000/GRID_sum.txt"
-  save_path_2: "/users/t/j/tjaglal/Projects/iBME/cterm_grid_sims/saxs_dro_-26.72_to_13.36_r0_1.36_to_1.68"
-  best_dro_2: 3.34
+  experimental_data: "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
+  structure_path: "/users/t/j/tjaglal/structures"
+  output_path: "/gpfs1/home/t/j/tjaglal/Projects/iBME/iBME_res/iBME_dro_-26.72_to_70.14_r0r_.850_to_1.10_t2000"
+  lent: 5000
+  post_weights_1: "/gpfs1/home/t/j/tjaglal/Projects/iBME/iBME_res/iBME_dro_-26.72_to_70.14_r0r_.850_to_1.10_t2000/structure_weights_sorted_2026-05-20.txt" 
+  grid_sum_1: "/gpfs1/home/t/j/tjaglal/Projects/iBME/iBME_res/iBME_dro_-26.72_to_70.14_r0r_.850_to_1.10_t2000/GRID_sum.txt"
+  save_path_1: "/users/t/j/tjaglal/Projects/iBME/grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76"
+  best_dro_1: 30.06
+  best_r0_1: 0.850
+  post_weights_2: "/gpfs1/home/t/j/tjaglal/Projects/iBME/iBME_res/iBME_dro_-26.72_to_70.14_r0r_.850_to_1.10_t2000/structure_weights_sorted_2026-05-20.txt" 
+  grid_sum_2: "/gpfs1/home/t/j/tjaglal/Projects/iBME/iBME_res/iBME_dro_-26.72_to_70.14_r0r_.850_to_1.10_t2000/GRID_sum.txt"
+  save_path_2: "/users/t/j/tjaglal/Projects/iBME/grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76"
+  best_dro_2: -16.7
   best_r0_2: 0.850
 
 
 #####----- ensemble_fit.py CONFIG
 ensemble_fit:
-  path_exp_file: ""
-  structure_path: ""
-  dro:
-  r0:
-  save_path: ""
-  sim_path: ""
+  path_exp_file: "/gpfs1/home/t/j/tjaglal/experimental_data/SASDLS4.dat"
+  structure_path: "/gpfs1/home/t/j/tjaglal/cterm_structures"
+  dro: 0.00
+  r0: 1.05
+  save_path: "/users/t/j/tjaglal/Projects/iBME/cterm_grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76"
+  sim_path: "/gpfs1/home/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_70.14_r0_1.36_to_1.76_t100"
 
 #####----- file_curve.py CONFIG
 file_curve:
@@ -46,17 +46,18 @@ file_curve:
 
 #####----- plot_theta.py CONFIG
 plot_theta:
-  out_path: "/users/t/j/tjaglal/Projects/theta_scan/30_50_1.44_1.62_1000_10000"
-  dro_min: 30
-  dro_max: 50
-  r0_min: 1.44
-  r0_max: 1.64
-  theta_val_1: 1000
-  theta_val_2: 2000
-  theta_val_3: 4000
-  theta_val_4: 6000
-  theta_val_5: 8000
-  theta_val_6: 10000
+  out_path: "/users/t/j/tjaglal/Projects/iBME/theta_scan/"
+  dro_min: -26.72
+  dro_max: 13.36
+  r0_min: 1.36
+  r0_max: 1.68
+  theta_val_1: 10
+  theta_val_2: 100
+  theta_val_3: 500
+  theta_val_4: 1000
+  theta_val_5: 2000
+  theta_val_6: 4000
+  theta_val_7: 6000
 
 #####----- Rg_compare.py CONFIG
 rg_compare:
@@ -87,17 +88,47 @@ rg_gps:
 
 #####----- file_curve.py CONFIG
 file_curve:
-  path_exp_file: 
-  search_path:
-  save_path:
-  file_1:
-  file_2:
-  file_3:
-  file_4:
-  file_5:
-  file_6:
+  path_exp_file: "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
+  search_path: "/users/t/j/tjaglal/structures/pepsi_out"
+  save_path: "/users/t/j/tjaglal/structures/pepsi_out"
+  file_1: "mm032_796"
+  file_2: "mm016_661"
+  file_3: "mm032_681"
+  file_4: "mm016_874"
+  file_5: "mm032_586"
+  file_6: "mm032_646"
+  file_7: "mm032_766"
+  file_8: "mm064_465"
+  file_9: "mm064_405"
+  file_10: "mm016_673"
 
 #####----- cumulative_weights.py CONFIG
 cumulative_weights:
   reweighted_path:
   save_path: 
+
+#####----- pepsi_fit.py CONFIG
+pepsi_fit:
+  structure_path: "/users/t/j/tjaglal/structures" 
+  path_exp_file: "/users/t/j/tjaglal/experimental_data/SASDLU4.dat"
+  path_to_pepsi: "/users/t/j/tjaglal/Projects/iBME"
+  summary_file: "/users/t/j/tjaglal/Projects/iBME/pepsi_fit_summary.txt"
+  cutoff: 10
+  output_dir_path: "/users/t/j/tjaglal/structures/pepsi_out"
+
+#####----- save_weights.py CONFIG
+save_weights:
+  save_path: "/gpfs1/home/t/j/tjaglal/Projects/iBME/cterm_grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76"
+  struc_path: "/users/t/j/tjaglal/cterm_structures"
+  ibme_out_dir: "/gpfs1/home/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_70.14_r0_1.36_to_1.76_t100"
+  type: "opt"
+  custom_dro: ""
+  custom_r0: ""
+
+#####----- pepsi_iteration.py CONFIG
+pepsi_iteration:
+  sim_path: "/users/t/j/tjaglal/Projects/iBME/grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76"
+  summary_file: "/users/t/j/tjaglal/Projects/iBME/grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76/pepsi_fit.txt"
+  gps: 340
+  type: "full" #"c_term" or "full"
+  cutoff: 10
