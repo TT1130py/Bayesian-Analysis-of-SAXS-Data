@@ -38,12 +38,6 @@ ensemble_fit:
   save_path: "/users/t/j/tjaglal/Projects/iBME/cterm_grid_sims/saxs_dro_-26.72_to_70.14_r0_1.36_to_1.76"
   sim_path: "/gpfs1/home/t/j/tjaglal/Projects/iBME/cterm_iBME_res/iBME_dro_-26.72_to_70.14_r0_1.36_to_1.76_t100"
 
-#####----- file_curve.py CONFIG
-file_curve:
-  path_exp_file: "/users/t/j/tjaglal/experimental_data"
-  search_path: "/users/t/j/tjaglal"
-  save_path: "/users/t/j/tjaglal/Projects/iBME/analysis"
-
 #####----- plot_theta.py CONFIG
 plot_theta:
   out_path: "/users/t/j/tjaglal/Projects/iBME/theta_scan/"
