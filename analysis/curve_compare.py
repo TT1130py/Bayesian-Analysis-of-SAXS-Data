@@ -8,11 +8,11 @@ import os
 import glob
 from natsort import natsorted
 import seaborn as sns
-from scipy.stats import linregress
+from scipy.stats import linregress 
 import matplotlib.lines as mlines
 import yaml
 
-type = "c_term"
+type = "full"
 #####----- FUNCTIONS
 def experimental_curve(path_exp_file, sim_length):
     exp_pd = pd.DataFrame(pd.read_csv(path_exp_file,
@@ -120,18 +120,17 @@ def grab_rg(sim_file, save_path, dro, r0, pdb_names):
 
     search_pattern = os.path.join(save_path, "mm*", f"GP{gp}", "Rg_env.dat")
     sorted_files = natsorted(glob.glob(search_pattern))
-
     rg_list = []
+
     for file in sorted_files:
         data = pd.read_csv(file, sep='\s+', header=None, names=['Rg'])
         rg_list.extend(data['Rg'].tolist())
-
     rg_array = np.array(rg_list)
 
     prior_rg_real = np.mean(rg_array)
     post_rg_real = np.sum(rg_array * ordered_weights)
 
-    return post_rg_real, prior_rg_real
+    return post_rg_real / 10, prior_rg_real / 10
 
 
 def cterm_grab_rg(sim_file, save_path, dro, r0, pdb_names):
@@ -157,7 +156,7 @@ def cterm_grab_rg(sim_file, save_path, dro, r0, pdb_names):
     prior_rg_real = np.mean(rg_array)
     post_rg_real = np.sum(rg_array * ordered_weights)
 
-    return post_rg_real, prior_rg_real
+    return post_rg_real / 10, prior_rg_real / 10
 
 def cterm_match_files(sim_file, save_path, dro, r0, structure_path, path_exp_file):
     sim_pd = pd.read_csv(sim_file, sep='\\t', header=0)
@@ -188,12 +187,23 @@ def cterm_match_files(sim_file, save_path, dro, r0, structure_path, path_exp_fil
     search_pattern = os.path.join(save_path, "MD*_*", f"GP{gp}", "calc_saxs.txt")
     sorted_files = natsorted(glob.glob(search_pattern))
 
+    print("\n" + "-"*50)
+    print(f"DEBUGGING DIRECTORY WALK FOR GP {gp}")
+    print(f"  Number of 'calc_saxs.txt' files found: {len(sorted_files)}")
+
     for file in sorted_files:
         parts = file.split(os.sep)
         frac_folder = [p for p in parts if p.startswith('MD') and '_' in p][0]
 
         parent_folder = frac_folder.split('_')[0]
         struct_frac_path = os.path.join(structure_path, parent_folder, frac_folder)
+        if "MD632" in struct_frac_path:
+            print(f"DEBUG: Searching for MD632 PDBs in: '{struct_frac_path}'")
+            # Print up to 5 actual files in that folder to see what they are named
+            if os.path.exists(struct_frac_path):
+                print(f"       Actual files inside this folder: {os.listdir(struct_frac_path)[:5]}")
+            else:
+                print(f"       ⚠️ This directory does not exist!")
         pdbs = glob.glob(os.path.join(struct_frac_path, "MD*_center*.pdb"))
 
         pdbs.sort()
@@ -266,6 +276,27 @@ def VACC_average_curve(sim_file, pdb_names, s_val, iq_val):
     ordered_weights = np.array([weight_map.get(name, 0.0) for name in pdb_names])
     iq_array = np.array(iq_val)
 
+    ##Debug
+    print("\n" + "="*50)
+    print("DEBUGGING: VACC_average_curve")
+    print(f"  Total SAXS simulation frames (iq_array rows): {iq_array.shape[0]}")
+    print(f"  Total mapped physical PDBs (ordered_weights): {len(ordered_weights)}")
+    print(f"  PDBs passed from match_files:                 {len(pdb_names)}")
+    print(f"  Unique weight entries parsed from sim_file:   {len(weight_map)}")
+
+    missing_weights = np.sum(ordered_weights == 0.0)
+    print(f"  PDBs mapped with a weight of 0.0 (or missing): {missing_weights}")
+
+    if iq_array.shape[0] != len(ordered_weights):
+        print("\n!!! ERROR TRIPPED !!!")
+        print(f"  Your SAXS matrix expects {iq_array.shape[0]} structures, "
+              f"but your PDB path searching only resolved {len(ordered_weights)} files.")
+        print("="*50 + "\n")
+    else:
+        print("Shapes match perfectly. Continuing multiplication...")
+        print("="*50 + "\n")
+
+
     prior_iq = np.mean(iq_array, axis=0)
 
     weighted_matrix = iq_array * ordered_weights[:, np.newaxis]
@@ -281,14 +312,14 @@ def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pr
     colors_pri = sns.color_palette("crest", n_colors=wam)
 
     fig, ax = plt.subplots(figsize = (10,10))
-    ax.errorbar(s, iq, yerr = err, fmt= 'o', markersize=3, ecolor="lightgray", label="Experiment")
+    ax.errorbar(s, iq, yerr = err, fmt= 'o', markersize=3, ecolor="lightgray", label="Experiment", zorder=1)
     ax.set_yscale("log")
 
     for i in range(wam):
         scale = np.sum(iq * iq_sim_arr[i]) / np.sum(iq_sim_arr[i] ** 2)
         scaled_iq_sim = iq_sim_arr[i] * scale
 
-        ax.plot(s_sim_arr[i], scaled_iq_sim, lw=3, zorder= i + 2, label=fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]}", color=colors_post[i])
+        ax.plot(s_sim_arr[i], scaled_iq_sim, lw=3, zorder= i + 10, label=fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]}", color=colors_post[i])
     ax.set_ylabel("i(q)")
     ax.set_xlabel("s")
     ax.set_title("Posterior SAXS curves with experiment")
@@ -296,9 +327,9 @@ def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pr
     leg_post = ax.legend(loc="upper right")
     ax.add_artist(leg_post)
 
-    rg_handles_post = [mlines.Line2D([], [], color='none', label=f"Exp Rg: {exp_rg:.2f} Å")]
+    rg_handles_post = [mlines.Line2D([], [], color='none', label=f"Exp Rg: {exp_rg:.2f} nm")]
     for i in range(wam):
-        label_text = fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]} Rg: {post_rg_arr[i]:.2f} Å"
+        label_text = fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]} Rg: {post_rg_arr[i]:.2f}"
         rg_handles_post.append(mlines.Line2D([], [], color='none', label=label_text))
 
     ax.legend(handles=rg_handles_post, loc="lower left", title="Radius of Gyration ($R_g$)", handlelength=0,
@@ -321,9 +352,9 @@ def plot_curves(s_sim_arr, iq_sim_arr, iq_prior_arr, s, iq, err, post_rg_arr, pr
     ax_2.add_artist(leg_pri)
 
     # 2nd Legend (Rg Values)
-    rg_handles_pri = [mlines.Line2D([], [], color='none', label=f"Exp Rg: {exp_rg:.2f} Å")]
+    rg_handles_pri = [mlines.Line2D([], [], color='none', label=f"Exp Rg: {exp_rg:.2f} nm")]
     for i in range(wam):
-        label_text = fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]} Rg: {pri_rg_arr[i]:.2f} Å"
+        label_text = fr"$\delta \rho$: {dro_list[i]} | $r_0$: {r0_list[i]} Rg: {pri_rg_arr[i]:.2f} nm"
         rg_handles_pri.append(mlines.Line2D([], [], color='none', label=label_text))
 
     ax_2.legend(handles=rg_handles_pri, loc="lower left", title="Radius of Gyration ($R_g$)", handlelength=0,
@@ -387,18 +418,17 @@ def main():
         piq_arr.append(iq_prior)
 
         if type == "c_term":
-            post_rg, prior_rg = cterm_grab_rg(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], r0_list,
-                                        f_name)
+            post_rg, prior_rg = cterm_grab_rg(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], f_name)
         else:
-             post_rg, prior_rg = grab_rg(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], r0_list, f_name)
+             post_rg, prior_rg = grab_rg(post_weights_list[i], save_paths_list[i], dro_list[i], r0_list[i], f_name)
         pos_rg_arr.append(post_rg)
         pri_rg_arr.append(prior_rg)
 
     angletrun, intensetrun, errtrun = experimental_curve(experimental_data, lent)
     post_figure, pri_figure = plot_curves(s_arr, wiq_arr, piq_arr, angletrun, intensetrun, errtrun, pos_rg_arr, pri_rg_arr, exp_rg, wam, dro_list, r0_list)
 
-    post_figure.savefig(f"{output_path}/posterior_saxs_curves.png", dpi=300, bbox_inches='tight')
-    pri_figure.savefig(f"{output_path}/prior_saxs_curves.png", dpi=300, bbox_inches='tight')
+    post_figure.savefig(f"{output_path}/test_posterior_saxs_curves.png", dpi=300, bbox_inches='tight')
+    pri_figure.savefig(f"{output_path}/test_prior_saxs_curves.png", dpi=300, bbox_inches='tight')
 
 if __name__ == '__main__':
     main()
