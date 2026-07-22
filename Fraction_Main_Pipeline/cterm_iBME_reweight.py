@@ -39,12 +39,27 @@ def concat_fractions(save_path):
         if not found_files:
             continue
 
-        sorted_files = natsorted(found_files)
-        compiled_data = [pd.read_csv(file, sep='\s+', header=None) for file in sorted_files]
-        final_df = pd.concat(compiled_data, ignore_index=True)
+        compiled_data = []
+        pdb_names = []
+        for file in found_files:
+            md_folder = os.path.basename(os.path.dirname(os.path.dirname(file)))
 
+            df = pd.read_csv(file, sep='\s+', header=None)
+            compiled_data.append(df)
+
+            pdb_search = os.path.join(struct_path, "MD*", md_folder, "*.pdb")
+            pdbs = natsorted(glob.glob(pdb_search))
+            pdb_names.extend(os.path.basename(p) for p in pdbs)
+
+            if len(pdbs) != len(df):
+                print(f"Warning: {len(pdbs)} PDBs found for {md_folder}, but {len(df)} frames in {file}.")
+
+        final_df = pd.concat(compiled_data, ignore_index=True)
         output_file = os.path.join(compiled_dir, f"GP{i}_all_saxs.txt")
         final_df.to_csv(output_file, sep=' ', index=False, header=False)
+
+        manifest_file = os.path.join(compiled_dir, f"GP{i}_manifest.txt")
+        pd.Series(pdb_names).to_csv(manifest_file, header=None, index=False)
 
 # ========= 2. RUN iBME LOOP =========
 concat_fractions(args.save_path)
@@ -184,11 +199,14 @@ weight_files = glob.glob(os.path.join(best_gp_dir, "*.weights.dat"))
 weight_files_sorted = sorted(weight_files, key=lambda x: int(re.search(r"_(\d+)\.weights\.dat", os.path.basename(x)).group(1)))
 best_weight_file = weight_files_sorted[-1]
 
-# Get a sorted list of ALL structure names to map the weights back to the PDBs
-all_structures = glob.glob(os.path.join(struct_path, "MD*", "MD*_*", "*.pdb"))
-contents = pd.DataFrame(natsorted([os.path.basename(x) for x in all_structures]))
+manifest_path = os.path.join(compiled_dir, f"GP{weight_idx}_manifest.txt")
+contents = pd.read_csv(manifest_path, header=None)
 
 opt_weight = pd.read_csv(best_weight_file, sep='\s+', header=None)
+
+if len(opt_weight) != len(contents):
+    print(f"Warning: Number of structures in {best_weight_file} does not match the number of structures in {manifest_path}.")
+
 opt_weight['PDB_Name'] = opt_weight.iloc[:, 0].map(contents.iloc[:, 0])
 opt_sorted = opt_weight.sort_values(by=1, ascending=False)
 
